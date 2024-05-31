@@ -35,6 +35,7 @@ const Main = () => {
     queryKey: ["balance", wallet?.address],
     queryFn: getEthBalance,
     enabled: !!wallet && !!publicClient,
+    refetchInterval: 3000,
   });
 
   const ethBalanceValue = formatEther(ethBalance || BigInt(0));
@@ -59,6 +60,7 @@ const Main = () => {
     queryKey: ["tokenBalance", wallet?.address],
     queryFn: getTokenBalance,
     enabled: !!wallet && !!publicClient,
+    refetchInterval: 3000,
   });
 
   const tokenBalanceValue = (tokenBalance || BigInt(0)).toString();

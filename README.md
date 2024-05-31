@@ -1,4 +1,15 @@
-# Road from Web2 to Web3: 1. Social Login with Privy and zkSync Network
+# 1. Social Login with Privy and zkSync Network
+
+## Table of Contents
+
+- [Table of Contents](#table-of-contents)
+- [0. Requirements](#0-requirements)
+- [1. Setup](#1-setup)
+- [2. Implement the Social Login with Privy and zkSync Network](#2-implement-the-social-login-with-privy-and-zksync-network)
+- [3. Test the Social Login](#3-test-the-social-login)
+- [4. Deploy the frontend to Vercel](#4-deploy-the-frontend-to-vercel)
+- [5. Interact with zkSync Network](#5-interact-with-zksync-network)
+- [6. Conclusion](#6-conclusion)
 
 ## 0. Requirements
 
@@ -29,21 +40,11 @@ Setting up template in zkSync-native-aa-demo/contracts...
 
 Navigate to your project: cd contracts
 
-Directory Overview:
-  - Contracts: /contracts
-  - Deployment Scripts: /deploy
-
-Commands:
-  - Compile your contracts: yarn compile
-  - Deploy your contract: yarn deploy
-    - Tip: You can use the --network option to specify the network to deploy to.
-
-Further Reading:
-  - Check out the README file in the project location for more details: contracts/README.md
+...
 ```
 
 - The project was initialized with the Hardhat + Solidity template.
-- The private key of the wallet responsible for deploying contracts should be provided.
+- The private key of the wallet should be provided or you can set it later in the `.env` file.
 
 #### 2. Install dependencies
 
@@ -51,7 +52,7 @@ Further Reading:
 $ cd contracts && yarn add @openzeppelin/contracts@latest
 ```
 
-- `openzeppelin-contracts` was installed at version `4.6.0` when creating the project. The latest version at the time of writing is `5.0.2`, so we update the dependency to the latest version.
+- `openzeppelin-contracts` was installed at version `4.6.0` when creating the project. The latest version at the time of writing is `5.0.2`, so we update the dependency to the latest version. This is for applying the latest security patches and updates.
 
 ### Frontend
 
@@ -80,20 +81,6 @@ Creating a new Next.js app in zkSync-native-aa-demo/frontend.
 Using yarn.
 
 Initializing project with template: app
-
-
-Installing dependencies:
-- react
-- react-dom
-- next
-
-Installing devDependencies:
-- typescript
-- @types/node
-- @types/react
-- @types/react-dom
-- eslint
-- eslint-config-next
 
 ...
 
@@ -124,13 +111,15 @@ $ yarn add @chakra-ui/react @emotion/react @emotion/styled framer-motion
 
 ### Privy
 
-TODO: Video guide
+#### 1. Create a new Privy App
 
-#### Why Privy?
+[![Privy-Setup](https://img.youtube.com/vi/uX3UdIsHb40/0.jpg)](https://www.youtube.com/watch?v=uX3UdIsHb40)
 
-- Easy to use: `usePrivy` hook for almost everything.
+> Do not use App ID in the video. It is for demonstration purposes only.
 
-#### Set the Privy App ID as an environment variable
+> Why Privy? It is a social login solution that allows users to log in with their social media accounts like Google, Facebook, Twitter, and more. It provides a seamless login experience for users and reduces the friction of creating new accounts. Additionally, it provides easy-to-use hooks for handling social login on the frontend.
+
+#### 2. Set the Privy App ID as an environment variable
 
 ```bash
 $ cp .env.local.example .env.local
@@ -197,10 +186,10 @@ export { Providers };
 
 - The `Providers` component wraps the `PrivyProvider`, `ChakraProvider`, and `QueryClientProvider` components around the children components.
 - The `PrivyProvider` component is used to handle social login with Privy.
+  - The `defaultChain` and `supportedChains` options are used to configure the default chain and supported chains with zkSyncSepoliaTestnet.
+  - The `embeddedWallets` option is used to create embedded wallets for users who don't have a wallet at first login.
 - The `ChakraProvider` component is used to handle styling with Chakra UI.
 - The `QueryClientProvider` component is used to handle data fetching and caching with React Query.
-- The `defaultChain` and `supportedChains` options are used to configure the default chain and supported chains with zkSyncSepoliaTestnet.
-- The `embeddedWallets` option is used to create embedded wallets for users who don't have a wallet at first login.
 
 ### 3. Create ZkSyncClientContext and ZkSyncClientProvider
 
@@ -471,7 +460,7 @@ $ yarn dev
 - After logging in, the wallet address should be displayed on the screen.
 - New users can be seen in the Privy dashboard.
 
-TODO: video guide
+[![Social-Login](https://img.youtube.com/vi/hMREDOzacOE/0.jpg)](https://www.youtube.com/watch?v=hMREDOzacOE)
 
 ## 4. Deploy the frontend to Vercel
 
@@ -479,7 +468,7 @@ TODO: video guide
 - It provides a seamless deployment experience for Next.js apps.
 - Sign up for a Vercel account and get started with the deployment.
 
-TODO: video guide
+[![Deployment](https://img.youtube.com/vi/GJ-r8fMF1rA/0.jpg)](https://www.youtube.com/watch?v=GJ-r8fMF1rA)
 
 ## 5. Interact with zkSync Network
 
@@ -648,6 +637,7 @@ const Main = () => {
     queryKey: ["balance", wallet?.address],
     queryFn: getEthBalance,
     enabled: !!wallet && !!publicClient,
+    refetchInterval: 3000,
   });
 
   const ethBalanceValue = formatEther(ethBalance || BigInt(0));
@@ -672,6 +662,7 @@ const Main = () => {
     queryKey: ["tokenBalance", wallet?.address],
     queryFn: getTokenBalance,
     enabled: !!wallet && !!publicClient,
+    refetchInterval: 3000,
   });
 
   const tokenBalanceValue = (tokenBalance || BigInt(0)).toString();
@@ -769,6 +760,15 @@ export default Main;
 - [zkSync Bridge](https://portal.zksync.io/?network=sepolia)
   - Bridge ETH on the Sepolia testnet to the zkSync Sepolia, embedded wallet address created by Privy.
 
+[![Bridge-Demo](https://img.youtube.com/vi/TX7T8LeLgWM/0.jpg)](https://www.youtube.com/watch?v=TX7T8LeLgWM)
+
 ### 6. Test the NFT minting
 
-TODO: video guide
+[![Bridge-Demo](https://img.youtube.com/vi/vWypdfiQslI/0.jpg)](https://www.youtube.com/watch?v=vWypdfiQslI)
+
+## 6. Conclusion
+
+- In this tutorial, we implemented social login with Privy and zkSync Sepolia testnet.
+- The frontend was deployed to Vercel for testing and demonstration purposes.
+- The social login experience was seamless and the NFT minting process was successful.
+- The zkSync network provided fast and low-cost transactions for minting NFTs.
