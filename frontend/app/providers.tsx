@@ -26,6 +26,7 @@ const ZkSyncClientProvider = ({ children }: { children: React.ReactNode }) => {
   const [zkSyncClient, setZkSyncClient] = useState<WalletClient | null>(null);
 
   const zkSyncSetup = async (wallet: ConnectedWallet) => {
+    await wallet.switchChain(zkSyncSepoliaTestnet.id); // Switch to zkSync chain
     const provider = await wallet.getEthereumProvider(); // Get EIP-1193 provider
 
     const client = createWalletClient({
@@ -73,6 +74,9 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
     <PrivyProvider
       appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID || ""}
       config={{
+        // Configure the default chain and supported chains with zkSyncSepoliaTestnet
+        defaultChain: zkSyncSepoliaTestnet,
+        supportedChains: [zkSyncSepoliaTestnet],
         // Create embedded wallets for users who don't have a wallet at first login
         embeddedWallets: {
           createOnLogin: "users-without-wallets",
