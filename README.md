@@ -5,13 +5,11 @@
 <h3>Let's build a Book Club dApp from scratch</h3>
 <a href="https://zk-sync-native-aa-demo.vercel.app/">Live Demo</a>
 <br>
+<p>Test account for the demo</p>
 <pre>
-Test account for the demo
-
 email: test-8685@privy.io
 phone: +1 555 555 2506
 otp: 459378</pre>
-
 </div>
 
 ## Table of Contents
@@ -21,6 +19,7 @@ otp: 459378</pre>
 - [Getting Started](#getting-started)
 - [Sections](#sections)
 - [Roadmap](#roadmap)
+- [License](#license)
 
 ## Introduction
 
@@ -37,6 +36,8 @@ By the end of this guide, you will have a Book Club dApp where users can:
 - Gas sponsored transactions by a paymaster
 - Create a book club and invite friends
 - (WIP)
+
+Those who are interested in bridging Web2 users to Web3 can use this guide to build any dApp with their desired features.
 
 > Each section will have a branch with the code for that specific feature.
 
@@ -77,3 +78,7 @@ $ yarn start
 - [ ] Create a contract account
 - [ ] Create a book club
 - (WIP)
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
