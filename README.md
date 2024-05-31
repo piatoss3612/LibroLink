@@ -5,6 +5,7 @@
 <h3>Let's build a Book Club dApp from scratch</h3>
 <a href="https://zk-sync-native-aa-demo.vercel.app/">Live Demo</a>
 <br>
+<br>
 <p>Test account for the demo</p>
 <pre>
 email: test-8685@privy.io
@@ -34,8 +35,9 @@ By the end of this guide, you will have a Book Club dApp where users can:
 - Sign in with their social media accounts
 - Create a contract account
 - Gas sponsored transactions by a paymaster
-- Create a book club and invite friends
-- (WIP)
+- Create reading logs for their favorite books
+- Create reading challenges
+- Join reading challenges and earn rewards
 
 Those who are interested in bridging Web2 users to Web3 can use this guide to build any dApp with their desired features.
 
@@ -76,7 +78,7 @@ $ yarn start
 - [x] Implement social login
 - [ ] Sponsor gas fees with a paymaster
 - [ ] Create a contract account
-- [ ] Create a book club
+- [ ] Create reading logs as NFTs
 - (WIP)
 
 ## License
