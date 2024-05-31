@@ -2,22 +2,21 @@
 
 ## Table of Contents
 
-- [Table of Contents](#table-of-contents)
-- [0. Requirements](#0-requirements)
-- [1. Setup](#1-setup)
-- [2. Implement the Social Login with Privy and zkSync Network](#2-implement-the-social-login-with-privy-and-zksync-network)
-- [3. Test the Social Login](#3-test-the-social-login)
-- [4. Deploy the frontend to Vercel](#4-deploy-the-frontend-to-vercel)
-- [5. Interact with zkSync Network](#5-interact-with-zksync-network)
-- [6. Conclusion](#6-conclusion)
+- [Requirements](#requirements)
+- [Setup](#setup)
+- [Implement the Social Login with Privy and zkSync Network](#implement-the-social-login-with-privy-and-zksync-network)
+- [Test the Social Login](#test-the-social-login)
+- [Deploy the frontend to Vercel](#deploy-the-frontend-to-vercel)
+- [Interact with zkSync Network](#interact-with-zksync-network)
+- [Conclusion](#conclusion)
 
-## 0. Requirements
+## Requirements
 
 - [Node.js](https://nodejs.org/en/) (v20.10.0)
 - [Yarn](https://yarnpkg.com/getting-started/install) (v1.22.21)
 - [zksync-cli](https://docs.zksync.io/build/tooling/zksync-cli/getting-started.html) (v1.7.1)
 
-## 1. Setup
+## Setup
 
 ### Contracts
 
@@ -128,7 +127,7 @@ $ cp .env.local.example .env.local
 - Copy the `.env.local.example` file to `.env.local`.
 - Set the `NEXT_PUBLIC_PRIVY_APP_ID` variable in the `.env.local` file to the Privy App ID just created.
 
-## 2. Implement the Social Login with Privy and zkSync Network
+## Implement the Social Login with Privy and zkSync Network
 
 ### 1. Create providers.tsx
 
@@ -453,7 +452,7 @@ $ yarn dev
 
 - The frontend should be running on `http://localhost:3000`.
 
-## 3. Test the Social Login
+## Test the Social Login
 
 - Open the browser and navigate to `http://localhost:3000`.
 - Click the `Login` button to log in with Privy.
@@ -462,7 +461,7 @@ $ yarn dev
 
 [![Social-Login](https://img.youtube.com/vi/hMREDOzacOE/0.jpg)](https://www.youtube.com/watch?v=hMREDOzacOE)
 
-## 4. Deploy the frontend to Vercel
+## Deploy the frontend to Vercel
 
 - [Vercel](https://vercel.com/) is a cloud platform for static sites and serverless functions.
 - It provides a seamless deployment experience for Next.js apps.
@@ -470,7 +469,7 @@ $ yarn dev
 
 [![Deployment](https://img.youtube.com/vi/GJ-r8fMF1rA/0.jpg)](https://www.youtube.com/watch?v=GJ-r8fMF1rA)
 
-## 5. Interact with zkSync Network
+## Interact with zkSync Network
 
 ### 1. Create an ERC-721 contract
 
@@ -766,7 +765,7 @@ export default Main;
 
 [![Bridge-Demo](https://img.youtube.com/vi/vWypdfiQslI/0.jpg)](https://www.youtube.com/watch?v=vWypdfiQslI)
 
-## 6. Conclusion
+## Conclusion
 
 - In this tutorial, we implemented social login with Privy and zkSync Sepolia testnet.
 - The frontend was deployed to Vercel for testing and demonstration purposes.
