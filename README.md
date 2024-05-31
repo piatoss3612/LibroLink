@@ -1,8 +1,9 @@
 <div align="center">
 
 <h1>LibroLink</h1>
-<img src="./assets/LibroNFT.png" width="36%" alt="LibroLink Logo">
+<img src="./assets/LibroNFT.png" width="48%" alt="LibroLink Logo">
 <h3>Let's build a Book Club dApp from scratch</h3>
+<a href="https://zk-sync-native-aa-demo.vercel.app/">Live Demo</a>
 </div>
 
 ## Table of Contents
