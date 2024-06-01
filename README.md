@@ -467,7 +467,7 @@ $ yarn dev
 - It provides a seamless deployment experience for Next.js apps.
 - Sign up for a Vercel account and get started with the deployment.
 
-[![Deployment](https://img.youtube.com/vi/GJ-r8fMF1rA/0.jpg)](https://www.youtube.com/watch?v=GJ-r8fMF1rA)
+[![Deployment](https://img.youtube.com/vi/QgIMinTR6xQ/0.jpg)](https://www.youtube.com/watch?v=QgIMinTR6xQ)
 
 ## Interact with zkSync Network
 
