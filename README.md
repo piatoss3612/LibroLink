@@ -9,6 +9,7 @@
 - [Deploy the frontend to Vercel](#deploy-the-frontend-to-vercel)
 - [Interact with zkSync Network](#interact-with-zksync-network)
 - [Conclusion](#conclusion)
+- [References](#references)
 
 ## Requirements
 
@@ -51,7 +52,7 @@ Navigate to your project: cd contracts
 $ cd contracts && yarn add @openzeppelin/contracts@latest
 ```
 
-- `openzeppelin-contracts` was installed at version `4.6.0` when creating the project. The latest version at the time of writing is `5.0.2`, so we update the dependency to the latest version. This is for applying the latest security patches and updates.
+- `@openzeppelin/contracts` was installed at version `4.6.x` when creating the project. The latest version at the time of writing is `5.0.2`, so we update the dependency to the latest version. This is for applying the latest security patches and updates.
 
 ### Frontend
 
@@ -107,6 +108,7 @@ $ yarn add @chakra-ui/react @emotion/react @emotion/styled framer-motion
 ```
 
 - The Chakra UI library is used for styling the frontend components.
+- You can use any other styling library of your choice. Chakra UI is used for lightweight and easy-to-use styling in this tutorial.
 
 ### Privy
 
@@ -268,7 +270,7 @@ const ZkSyncClientProvider = ({ children }: { children: React.ReactNode }) => {
 - `zkSyncSetup` function is used to setup the zkSync client with the wallet.
 - Switch the network to zkSync chain using the `switchChain` method.
 - Retrieve the EIP-1193 provider from the wallet and create custom transport for the zkSync client.
-- zkSync client extends the EIP-712 wallet actions for typed structured data signing.
+- zkSync client extends the EIP-712 wallet actions for typed structured data signing, which is required for the next steps.
 
 ```tsx
 const zkSyncSetup = async (wallet: ConnectedWallet) => {
@@ -287,7 +289,8 @@ const zkSyncSetup = async (wallet: ConnectedWallet) => {
 ```
 
 - Modify the `Providers` component to include the `ZkSyncClientProvider` component.
-- The `ZkSyncClientProvider` component should be wrapped around the `PrivyProvider` component for the `usePrivy` hook to work.
+
+> Note: The `ZkSyncClientProvider` component should be wrapped around the `PrivyProvider` component for the `usePrivy` hook to work.
 
 ```tsx
 const Providers = ({ children }: { children: React.ReactNode }) => {
@@ -473,7 +476,7 @@ $ yarn dev
 
 ### 1. Create an ERC-721 contract
 
-- Modify the `hardhat.config.ts` file to change the compiler version to `0.8.24`.
+- Modify the `hardhat.config.ts` file to change the compiler version to `0.8.24`. At the time of writing, latest version of compiler is `0.8.26`, but `0.8.25` and `0.8.26` are not fully supported by zkSync. So, we use `0.8.24` for compatibility.
 
 ```ts
 // contracts/hardhat.config.ts
@@ -488,7 +491,7 @@ const config: HardhatUserConfig = {
 export default config;
 ```
 
-- Create a new file named `LibroNFT.sol` in the `contracts/contracts` directory.
+- Create a new file named `LibroNFT.sol` in the `contracts` directory.
 
 ```solidity
 // contracts/contracts/LibroNFT.sol
@@ -539,7 +542,7 @@ contract LibroNFT is ERC721 {
 $ yarn hardhat compile
 ```
 
-- Create a new file named `deployLibroNFT.ts` in the `contracts/deploy` directory.
+- Create a new file named `deployLibroNFT.ts` in the `deploy` directory.
 
 ```ts
 import { deployContract } from "./utils";
@@ -771,3 +774,9 @@ export default Main;
 - The frontend was deployed to Vercel for testing and demonstration purposes.
 - The social login experience was seamless and the NFT minting process was successful.
 - The zkSync network provided fast and low-cost transactions for minting NFTs.
+
+## References
+
+- [zkSync: Tooling Guides](https://docs.zksync.io/build/tutorials/tooling-guides/viem.html)
+- [Privy: Web3 integrations](https://docs.privy.io/guide/react/wallets/usage/3p-libraries#viem)
+- [Viem: Getting started with zkSync](https://viem.sh/zksync)
