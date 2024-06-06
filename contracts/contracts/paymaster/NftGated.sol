@@ -13,8 +13,12 @@ abstract contract NftGated {
      * @param account Address of the account to check for NFT ownership.
      */
     function _requireNftOwner(address account) internal view {
-        if (nft.balanceOf(account) == 0) {
+        if (!isEligible(account)) {
             revert NftGated__SenderDoesNotOwnNft();
         }
+    }
+
+    function isEligible(address account) public view returns (bool) {
+        return nft.balanceOf(account) > 0;
     }
 }

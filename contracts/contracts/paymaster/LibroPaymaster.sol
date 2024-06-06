@@ -15,9 +15,11 @@ import {BOOTLOADER_FORMAL_ADDRESS} from "@matterlabs/zksync-contracts/l2/system-
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 import {NftGated, IERC721} from "./NftGated.sol";
+import {DailyLimit} from "./DailyLimit.sol";
 
-contract LibroPaymaster is IPaymaster, NftGated, Ownable {
+contract LibroPaymaster is IPaymaster, NftGated, DailyLimit, Ownable {
     // ====== Custom Errors ======
+    error LibroPaymaster__ZeroAddress();
     error LibroPaymaster__OnlyBootloaderCanCallThisMethod();
     error LibroPaymaster__PaymasterInputShouldBeAtLeast4BytesLong();
     error LibroPaymaster__FailedToTransferTxFeeToBootloader();
@@ -34,8 +36,9 @@ contract LibroPaymaster is IPaymaster, NftGated, Ownable {
     }
 
     // ====== Constructor ======
-    constructor(address _nft) Ownable(msg.sender) {
+    constructor(address _nft, uint256 _dailyLimit) Ownable(msg.sender) {
         nft = IERC721(_nft);
+        _setDailyLimit(_dailyLimit);
     }
 
     /**
@@ -59,11 +62,17 @@ contract LibroPaymaster is IPaymaster, NftGated, Ownable {
 
         // Check if the user owns the NFT.
         address userAddress = address(uint160(_transaction.from));
+        if (userAddress == address(0)) {
+            revert LibroPaymaster__ZeroAddress();
+        }
 
         _requireNftOwner(userAddress);
 
         bytes4 paymasterInputSelector = bytes4(_transaction.paymasterInput[0:4]);
         if (paymasterInputSelector == IPaymasterFlow.general.selector) {
+            // Check if the daily limit was reached.
+            _updateDailyLimit(userAddress);
+
             // Note, that while the minimal amount of ETH needed is tx.gasPrice * tx.gasLimit,
             // neither paymaster nor account are allowed to access this context variable.
             uint256 requiredETH = _transaction.gasLimit * _transaction.maxFeePerGas;
@@ -101,6 +110,13 @@ contract LibroPaymaster is IPaymaster, NftGated, Ownable {
         if (!success) {
             revert LibroPaymaster__FailedToWithdrawFundsFromPaymaster();
         }
+    }
+
+    /**
+     * @dev Override the daily limit setter to add the onlyOwner modifier.
+     */
+    function setDailyLimit(uint256 _dailyLimit) external override onlyOwner {
+        _setDailyLimit(_dailyLimit);
     }
 
     receive() external payable {}
