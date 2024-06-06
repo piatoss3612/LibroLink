@@ -14,7 +14,7 @@ import {
 import {BOOTLOADER_FORMAL_ADDRESS} from "@matterlabs/zksync-contracts/l2/system-contracts/Constants.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-import {NftGated} from "./NftGated.sol";
+import {NftGated, IERC721} from "./NftGated.sol";
 
 contract LibroPaymaster is IPaymaster, NftGated, Ownable {
     // ====== Custom Errors ======
@@ -34,7 +34,9 @@ contract LibroPaymaster is IPaymaster, NftGated, Ownable {
     }
 
     // ====== Constructor ======
-    constructor(address _nft) Ownable(msg.sender) NftGated(_nft) {}
+    constructor(address _nft) Ownable(msg.sender) {
+        nft = IERC721(_nft);
+    }
 
     /**
      *
@@ -57,6 +59,7 @@ contract LibroPaymaster is IPaymaster, NftGated, Ownable {
 
         // Check if the user owns the NFT.
         address userAddress = address(uint160(_transaction.from));
+
         _requireNftOwner(userAddress);
 
         bytes4 paymasterInputSelector = bytes4(_transaction.paymasterInput[0:4]);

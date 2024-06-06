@@ -8,10 +8,6 @@ abstract contract NftGated {
 
     IERC721 public immutable nft;
 
-    constructor(address _nft) {
-        nft = IERC721(_nft);
-    }
-
     /**
      * @notice Checks if the sender owns an NFT.
      * @param account Address of the account to check for NFT ownership.
