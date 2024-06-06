@@ -1,5 +1,19 @@
 # 1. Social Login with Privy and zkSync Network
 
+## Overview
+
+In this tutorial, we will cover following topics:
+
+- In this tutorial, we will implement social login with Privy and zkSync network.
+- We will create a frontend app with Next.js and deploy it to Vercel.
+- We will interact with the zkSync network to mint an NFT on the zkSync Sepolia testnet.
+
+This tutorial is for developers who:
+
+- Interested in onboarding Web2 users to Web3 by providing a seamless social login experience.
+- Want to interact with zkSync network via Web3 libraries like Viem.
+- Build a project with zkSync network and get ready for the next hackathon.
+
 ## Table of Contents
 
 - [Requirements](#requirements)
@@ -774,6 +788,11 @@ export default Main;
 - The frontend was deployed to Vercel for testing and demonstration purposes.
 - The social login experience was seamless and the NFT minting process was successful.
 - The zkSync network provided fast and low-cost transactions for minting NFTs.
+
+## Next Steps
+
+- Implement paymaster for gasless transactions with advanced features
+- Think about what is needed to implement membership-based fee payments
 
 ## References
 
