@@ -1,4 +1,4 @@
-const LIBRO_NFT_ADDRESS = "0x76b69a3E8D11673E547d54511831d64b81Dc9ce0";
+const LIBRO_NFT_ADDRESS = "0x60edA23AAF519122Db91CdeAabeD65630435F9DC";
 const LIBRO_NFT_ABI = [
   {
     inputs: [
@@ -112,6 +112,11 @@ const LIBRO_NFT_ABI = [
       },
     ],
     name: "ERC721NonexistentToken",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "LibroNFT__Soulbound",
     type: "error",
   },
   {
@@ -234,6 +239,19 @@ const LIBRO_NFT_ABI = [
         type: "uint256",
       },
     ],
+    name: "burn",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "tokenId",
+        type: "uint256",
+      },
+    ],
     name: "getApproved",
     outputs: [
       {
@@ -259,6 +277,35 @@ const LIBRO_NFT_ABI = [
       },
     ],
     name: "isApprovedForAll",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "tokenId",
+        type: "uint256",
+      },
+      {
+        internalType: "address",
+        name: "from",
+        type: "address",
+      },
+      {
+        internalType: "address",
+        name: "to",
+        type: "address",
+      },
+    ],
+    name: "isTransferable",
     outputs: [
       {
         internalType: "bool",
