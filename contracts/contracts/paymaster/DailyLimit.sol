@@ -12,7 +12,7 @@ abstract contract DailyLimit {
         uint128 timestamp;
     }
 
-    uint256 public dailyLimitd;
+    uint256 public dailyLimit;
 
     mapping(address => Tracker) public dailyLimitTracker;
 
@@ -35,7 +35,7 @@ abstract contract DailyLimit {
             // If the last update was before today 6am and the current time is after today 6am,
             // the counter should be reset whether the limit was reached or not.
             reset = true;
-        } else if (tracker.counter >= dailyLimitd) {
+        } else if (tracker.counter >= dailyLimit) {
             // If the counter reached the limit, the user should not be able to perform any more operations.
             reacehad = true;
         }
@@ -83,7 +83,7 @@ abstract contract DailyLimit {
      * @param _dailyLimit The new daily limit.
      */
     function _setDailyLimit(uint256 _dailyLimit) internal {
-        dailyLimitd = _dailyLimit;
+        dailyLimit = _dailyLimit;
         emit DailyLimitSet(_dailyLimit);
     }
 }

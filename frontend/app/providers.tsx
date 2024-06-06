@@ -1,67 +1,12 @@
 "use client";
 
-import { createContext, useEffect, useState } from "react";
-import {
-  ConnectedWallet,
-  PrivyProvider,
-  usePrivy,
-  useWallets,
-} from "@privy-io/react-auth";
+import { useEffect, useState } from "react";
+import { PrivyProvider } from "@privy-io/react-auth";
 import { ChakraProvider } from "@chakra-ui/react";
-import { WalletClient, createWalletClient, custom } from "viem";
-import { eip712WalletActions, zkSyncSepoliaTestnet } from "viem/zksync";
+import { zkSyncSepoliaTestnet } from "viem/zksync";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
-
-interface ZkSyncClientContextValue {
-  wallet: ConnectedWallet | null;
-  zkSyncClient: WalletClient | null;
-}
-
-const ZkSyncClientContext = createContext({} as ZkSyncClientContextValue);
-
-const ZkSyncClientProvider = ({ children }: { children: React.ReactNode }) => {
-  const { ready, authenticated } = usePrivy();
-  const { wallets } = useWallets();
-  const [wallet, setWallet] = useState<ConnectedWallet | null>(null);
-  const [zkSyncClient, setZkSyncClient] = useState<WalletClient | null>(null);
-
-  const zkSyncSetup = async (wallet: ConnectedWallet) => {
-    await wallet.switchChain(zkSyncSepoliaTestnet.id); // Switch to zkSync chain
-    const provider = await wallet.getEthereumProvider(); // Get EIP-1193 provider
-
-    const client = createWalletClient({
-      account: wallet.address as `0x${string}`,
-      chain: zkSyncSepoliaTestnet,
-      transport: custom(provider),
-    }).extend(eip712WalletActions());
-
-    setWallet(wallet);
-    setZkSyncClient(client);
-  };
-
-  useEffect(() => {
-    if (ready && authenticated) {
-      const embeddedWallet: ConnectedWallet | undefined = wallets.find(
-        (wallet) => wallet.walletClientType === "privy"
-      );
-
-      if (embeddedWallet) {
-        zkSyncSetup(embeddedWallet);
-      }
-    }
-  }, [ready, authenticated, wallets]);
-
-  return (
-    <ZkSyncClientContext.Provider
-      value={{
-        wallet,
-        zkSyncClient,
-      }}
-    >
-      {children}
-    </ZkSyncClientContext.Provider>
-  );
-};
+import { ZkSyncClientProvider } from "@/context/ZkSyncClient";
+import { PaymasterProvider } from "@/context/Paymaster";
 
 const Providers = ({ children }: { children: React.ReactNode }) => {
   const queryClient = new QueryClient();
@@ -86,7 +31,7 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
       <ChakraProvider>
         <ZkSyncClientProvider>
           <QueryClientProvider client={queryClient}>
-            {mounted && children}
+            <PaymasterProvider>{mounted && children}</PaymasterProvider>
           </QueryClientProvider>
         </ZkSyncClientProvider>
       </ChakraProvider>
@@ -94,4 +39,4 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-export { Providers, ZkSyncClientContext };
+export default Providers;

@@ -1,4 +1,5 @@
-const LIBRO_PAYMASTER_ADDRESS = "0x5637d4336B30a999e9C47541A4cbC87Cf1Fd00C0";
+const LIBRO_PAYMASTER_ADDRESS =
+  "0xA3a63f8CbB2D6CA2b483A6AA6f2c633a3848FEF4" as `0x${string}`;
 const LIBRO_PAYMASTER_ABI = [
   {
     inputs: [
@@ -195,6 +196,19 @@ const LIBRO_PAYMASTER_ABI = [
     type: "function",
   },
   {
+    inputs: [],
+    name: "dailyLimit",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
     inputs: [
       {
         internalType: "address",
@@ -213,19 +227,6 @@ const LIBRO_PAYMASTER_ABI = [
         internalType: "uint128",
         name: "timestamp",
         type: "uint128",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "dailyLimitd",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
       },
     ],
     stateMutability: "view",
@@ -258,7 +259,7 @@ const LIBRO_PAYMASTER_ABI = [
         type: "address",
       },
     ],
-    name: "isEligible",
+    name: "isNftOwner",
     outputs: [
       {
         internalType: "bool",
