@@ -23,6 +23,7 @@ This tutorial is for developers who:
 - [Deploy the frontend to Vercel](#deploy-the-frontend-to-vercel)
 - [Interact with zkSync Network](#interact-with-zksync-network)
 - [Conclusion](#conclusion)
+- [Next Steps](#next-steps)
 - [References](#references)
 
 ## Requirements
