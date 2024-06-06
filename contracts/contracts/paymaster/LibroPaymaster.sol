@@ -16,8 +16,9 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 import {NftGated, IERC721} from "./NftGated.sol";
 import {DailyLimit} from "./DailyLimit.sol";
+import {BanFilter} from "./BanFilter.sol";
 
-contract LibroPaymaster is IPaymaster, NftGated, DailyLimit, Ownable {
+contract LibroPaymaster is IPaymaster, NftGated, DailyLimit, BanFilter, Ownable {
     // ====== Custom Errors ======
     error LibroPaymaster__ZeroAddress();
     error LibroPaymaster__OnlyBootloaderCanCallThisMethod();
@@ -68,6 +69,9 @@ contract LibroPaymaster is IPaymaster, NftGated, DailyLimit, Ownable {
 
         _requireNftOwner(userAddress);
 
+        // Check if the user is banned.
+        _requireNotBanned(userAddress);
+
         bytes4 paymasterInputSelector = bytes4(_transaction.paymasterInput[0:4]);
         if (paymasterInputSelector == IPaymasterFlow.general.selector) {
             // Check if the daily limit was reached.
@@ -117,6 +121,13 @@ contract LibroPaymaster is IPaymaster, NftGated, DailyLimit, Ownable {
      */
     function setDailyLimit(uint256 _dailyLimit) external override onlyOwner {
         _setDailyLimit(_dailyLimit);
+    }
+
+    /**
+     * @dev Override the ban setter to add the onlyOwner modifier.
+     */
+    function setBanStatus(address _user, bool _status) external override onlyOwner {
+        _setBanStatus(_user, _status);
     }
 
     receive() external payable {}
