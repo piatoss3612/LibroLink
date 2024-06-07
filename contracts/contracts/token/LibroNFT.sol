@@ -34,6 +34,15 @@ contract LibroNFT is ERC721, IERC6454 {
     }
 
     /**
+     * @dev Mints a new token to the given address.
+     * @param to address to mint the token to.
+     */
+    function mint(address to) external {
+        uint256 tokenId = _tokenId++;
+        _safeMint(to, tokenId);
+    }
+
+    /**
      * @dev Burns the token.
      */
     function burn(uint256 tokenId) external {

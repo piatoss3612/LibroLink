@@ -1,5 +1,5 @@
 const LIBRO_PAYMASTER_ADDRESS =
-  "0xA3a63f8CbB2D6CA2b483A6AA6f2c633a3848FEF4" as `0x${string}`;
+  "0x8624cfA52d5F93c0174D8d318fD9E531592D176E" as `0x${string}`;
 const LIBRO_PAYMASTER_ABI = [
   {
     inputs: [

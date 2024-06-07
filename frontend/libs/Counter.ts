@@ -1,5 +1,5 @@
 const COUNTER_ADDRESS =
-  "0x52A7b3eF76Cc5bd6EEA85Ec42C229713AF43FB0b" as `0x${string}`;
+  "0x42d625D2A7142F55952d8B63a5FCa907656c2887" as `0x${string}`;
 const COUNTER_ABI = [
   {
     inputs: [],

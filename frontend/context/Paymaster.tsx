@@ -1,12 +1,14 @@
+import PaymasterModal from "@/components/paymaster/PaymasterModal";
 import useZkSyncClient from "@/hooks/useZkSyncClient";
 import {
   LIBRO_PAYMASTER_ABI,
   LIBRO_PAYMASTER_ADDRESS,
 } from "@/libs/LibroPaymaster";
+import { PaymasterRequest } from "@/types";
 import { useDisclosure, useToast } from "@chakra-ui/react";
 import { useQueries } from "@tanstack/react-query";
 import { createContext, useState } from "react";
-import { TransactionRequest, formatEther } from "viem";
+import { formatEther } from "viem";
 import {
   EstimateFeeReturnType,
   getGeneralPaymasterInput,
@@ -15,8 +17,8 @@ import {
 
 interface PaymasterContextValue {
   openPaymasterModal: (
-    request: TransactionRequest,
-    callback: () => void
+    request: PaymasterRequest,
+    callback?: () => void
   ) => void;
 }
 
@@ -31,7 +33,7 @@ const PaymasterProvider = ({ children }: { children: React.ReactNode }) => {
   const { wallet, publicClient, zkSyncClient } = useZkSyncClient();
 
   // State for the transaction request
-  const [request, setRequest] = useState<TransactionRequest | null>(null);
+  const [request, setRequest] = useState<PaymasterRequest | null>(null);
   const [callback, setCallback] = useState<() => void>(() => {});
 
   // State for the loading status and transaction result
@@ -63,7 +65,7 @@ const PaymasterProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     return await publicClient.estimateFee({
-      account: request.from || wallet.address,
+      account: request.from || (wallet.address as `0x${string}`),
       to: request.to,
       data: request.data,
       value: request.value,
@@ -91,12 +93,18 @@ const PaymasterProvider = ({ children }: { children: React.ReactNode }) => {
   });
 
   const gasPrice = formatEther(gasPriceQuery.data || BigInt(0));
-  const estimateFee = estimateFeeQuery.data || ({} as EstimateFeeReturnType);
+  const estimateFee =
+    estimateFeeQuery.data ||
+    ({ gasLimit: BigInt(0), maxFeePerGas: BigInt(0) } as EstimateFeeReturnType);
+  const fee = formatEther(estimateFee.gasLimit);
+  const cost = formatEther(
+    (gasPriceQuery.data || BigInt(0)) * estimateFee.gasLimit
+  );
 
   // Function to open the paymaster modal
   const openPaymasterModal = (
-    request: TransactionRequest,
-    callback: () => void
+    request: PaymasterRequest,
+    callback?: () => void
   ) => {
     setRequest(request);
     setCallback(() => callback || (() => {}));
@@ -138,7 +146,7 @@ const PaymasterProvider = ({ children }: { children: React.ReactNode }) => {
 
       // Send the transaction
       const hash = await zkSyncClient.sendTransaction({
-        account: request.from || wallet.address,
+        account: request.from || (wallet.address as `0x${string}`),
         to: request.to,
         data: request.data,
         value: request.value,
@@ -267,11 +275,8 @@ const PaymasterProvider = ({ children }: { children: React.ReactNode }) => {
   });
 
   const dailyLimit = dailyLimitQuery.data || BigInt(0);
-  const checkDailyLimitResult = checkDailyLimitQuery.data || [
-    false,
-    false,
-    BigInt(0),
-  ];
+  const [canResetDailyTxCount, hasReachedDailyLimit, dailyTxCount] =
+    checkDailyLimitQuery.data || [false, false, BigInt(0)];
   const isBanned = isBannedQuery.data || false;
   const isNftOwner = isNftOwnerQuery.data || false;
 
@@ -281,6 +286,24 @@ const PaymasterProvider = ({ children }: { children: React.ReactNode }) => {
         openPaymasterModal,
       }}
     >
+      <PaymasterModal
+        isOpen={isOpen}
+        onClose={closePaymasterModal}
+        isLoading={isLoading}
+        requestName={request?.name || "Unknown Request"}
+        gasPrice={gasPrice}
+        fee={fee}
+        cost={cost}
+        dailyLimit={dailyLimit}
+        canResetDailyTxCount={canResetDailyTxCount}
+        hasReachedDailyLimit={hasReachedDailyLimit}
+        dailyTxCount={dailyTxCount}
+        isBanned={isBanned}
+        isNftOwner={isNftOwner}
+        txStatus={txStatus}
+        txHash={txHash}
+        confirmPayment={confirmPayment}
+      />
       {children}
     </PaymasterContext.Provider>
   );

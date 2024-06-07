@@ -1,5 +1,5 @@
 const LIBRO_NFT_ADDRESS =
-  "0x789cE2DAbDF30C2991F7eb67F8ec9728D38D4217" as `0x${string}`;
+  "0x2DcA9FdA301B22Bcc3ca7FA7B30b506CAF9205B5" as `0x${string}`;
 const LIBRO_NFT_ABI = [
   {
     inputs: [
