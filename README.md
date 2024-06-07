@@ -1,9 +1,10 @@
-# 2. General Paymaster
+# 2. General Paymaster with custom features
 
 ## Overview
 
 ## Table of Contents
 
+- [Requirements](#requirements)
 - [General Paymaster](#general-paymaster)
 - [Considerations when integrating the Paymaster contract to your project](#considerations-when-integrating-the-paymaster-contract-to-your-project)
 - [NFT Gated Access](#nft-gated-access)
@@ -16,7 +17,19 @@
 - [Next Steps](#next-steps)
 - [References](#references)
 
+## Requirements
+
+- [Node.js](https://nodejs.org/en/) (v20.10.0)
+- [Yarn](https://yarnpkg.com/getting-started/install) (v1.22.21)
+- [zksync-cli](https://docs.zksync.io/build/tooling/zksync-cli/getting-started.html) (v1.7.1)
+
+> This guide is following section of [1. Social Login with Privy and zkSync Network](https://github.com/piatoss3612/LibroLink/tree/01.social-login). You don't need to follow the previous guide to complete this guide. However, it is recommended to read the setup and installation part of the previous guide.
+
 ## General Paymaster
+
+### 1. Take a look at the General Paymaster contract
+
+- [GeneralPaymaster.sol](https://github.com/matter-labs/zksync-contract-templates/blob/main/templates/hardhat/solidity/contracts/paymasters/GeneralPaymaster.sol)
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -89,7 +102,14 @@ contract GeneralPaymaster is IPaymaster, Ownable {
 }
 ```
 
-- Modify the `GeneralPaymaster` contract
+### 2. General Paymaster Flow
+
+TODO: Add the general paymaster flow
+
+### 3. Create a new Paymaster contract
+
+- Create a new Paymaster contract. We will name it `LibroPaymaster.sol`.
+- Add the custom errors to the contract as shown below.
 
 ```solidity
 // contracts/contracts/paymaster/LibroPaymaster.sol
@@ -194,7 +214,13 @@ contract LibroPaymaster is IPaymaster, Ownable {
 }
 ```
 
-```
+### 4. Compile the contract
+
+- Before compiling the contract, make sure to add the `isSystem` flag to the `zksolc` settings in the `hardhat.config.ts` file.
+- `isSystem` flag is required to enable the interactivity with the zkSync system contracts.
+
+```typescript
+// contracts/hardhat.config.ts
 import { HardhatUserConfig } from "hardhat/config";
 
 import "@matterlabs/hardhat-zksync";
@@ -219,31 +245,48 @@ const config: HardhatUserConfig = {
 export default config;
 ```
 
+- Compile the contract using the following command:
+
 ```bash
 $ npx hardhat compile
 
-<<<<<<< HEAD
-- [1. Social Login with Privy and zkSync Network](https://github.com/piatoss3612/LibroLink/tree/01.social-login)
-- [2. General Paymaster with custom features](https://github.com/piatoss3612/LibroLink/tree/02.general-paymaster)
-=======
 ...
 Successfully compiled 1 Solidity file
 Done in 9.19s.
 ```
->>>>>>> 2e68aed (Update README.md)
 
 ## Considerations when integrating the Paymaster contract to your project
 
-<<<<<<< HEAD
-- [x] Implement social login
-- [x] Sponsor gas fees with a general paymaster
-- [ ] Gas fees payment in ERC20 tokens with a approval-based paymaster
-- [ ] Create a contract account
-- [ ] Create reading logs as NFTs
-- (WIP)
-=======
+### 1. Problem with General Paymaster
+
+- The General Paymaster contract does not include any validations other than using the paymaster general flow.
+- It means that anyone can use the paymaster to get support for their transactions.
+- It is not suitable for a production environment, as it can be misused by malicious users and your paymaster can run out of funds.
+- To prevent this, you need to consider adding custom features to the paymaster contract.
+
+### 2. Custom Features
+
+- Let's think about what custom features there can be in the paymaster contract.
+- Here are some of the custom features that can be added to the paymaster contract:
+  - NFT Gated Access: Allow only users who own an NFT to use the paymaster.
+  - Daily Counter/Gas Limit: Limit the number of transactions a user can perform in a day.
+  - Allow/Ban List: Allow or ban specific users from using the paymaster.
+
+> There is no answer to what custom features you should add to the paymaster contract. It depends on your project requirements and the use case of the paymaster contract.
+
+### 3. Choose the custom features
+
+- In this guide, we will add the following custom features to the paymaster contract:
+  - NFT Gated Access: Allow only users who own an NFT to use the paymaster.
+  - Daily Limit Control: Limit the number of transactions a user can perform in a day.
+  - Ban Filter: Ban specific users from using the paymaster.
+
 ## NFT Gated Access
->>>>>>> 2e68aed (Update README.md)
+
+### 1. Create an NFTGated contract
+
+- Create a new abstract contract named `NftGated.sol`.
+- The contract will have a function to check if the sender owns an NFT.
 
 ```solidity
 // contracts/contracts/paymaster/NftGated.sol
@@ -274,9 +317,15 @@ abstract contract NftGated {
 }
 ```
 
+### 2. Add the NFTGated contract to the LibroPaymaster contract
+
+- Import the `NftGated` contract to the `LibroPaymaster` contract.
+
 ```solidity
 import {NftGated, IERC721} from "./NftGated.sol";
 ```
+
+- Inherit the `NftGated` contract in the `LibroPaymaster` contract.
 
 ```solidity
 contract LibroPaymaster is IPaymaster, NftGated, Ownable {
@@ -285,11 +334,16 @@ contract LibroPaymaster is IPaymaster, NftGated, Ownable {
 }
 ```
 
+- Add the NFT contract address to the constructor of the `LibroPaymaster` contract.
+
 ```solidity
 constructor(address _nft) Ownable(msg.sender) {
     nft = IERC721(_nft);
 }
 ```
+
+- Add the NFT owner check in the `validateAndPayForPaymasterTransaction` function.
+- If the user does not own the NFT, the transaction will be reverted.
 
 ```solidity
 function validateAndPayForPaymasterTransaction(bytes32, bytes32, Transaction calldata _transaction)
@@ -318,6 +372,22 @@ function validateAndPayForPaymasterTransaction(bytes32, bytes32, Transaction cal
 }
 ```
 
+### 3. Another Issue with the NFTGated contract
+
+- The `NftGated` contract only checks if the user owns an NFT.
+- If the NFT is transferred to another user, recipient can take advantage of the paymaster contract.
+- This allows one user with multiple accounts to use the paymaster contract, which is not desirable.
+- To prevent this, we need to add a restriction to the NFT.
+- We will add the `Soulbound` feature to the NFT contract only allowing authorized users who have gone through the appropriate membership procedures.
+
+> We will cover the membership procedure in the future guides. For now, the NFT can be minted by anyone for testing purposes.
+
+### 4. Soulbound NFT Interface
+
+- There are many ways to implement the `Soulbound` feature.
+- In this guide, we will implement the `Soulbound` feature using the `IERC6454` interface.
+- The `IERC6454` interface will have a minimal function to check if the token is transferable or not.
+
 ```solidity
 // contracts/contracts/token/interfaces/IERC6454.sol
 
@@ -340,6 +410,14 @@ interface IERC6454 { /* is IERC165 */
     function isTransferable(uint256 tokenId, address from, address to) external view returns (bool);
 }
 ```
+
+### 5. Add the Soulbound NFT feature to the LibroNFT contract
+
+- Add the `IERC6454` interface to the `LibroNFT` contract.
+- Implement the `isTransferable` function to check if the token is transferable or not.
+- Only allow minting tokens to a non-zero address and burning tokens by sending to a zero address.
+- Override the `_update` function to add transfer restrictions.
+- Override the `supportsInterface` function to add ERC-6454 support.
 
 ```solidity
 // contracts/contracts/token/LibroNFT.sol
@@ -441,14 +519,18 @@ contract LibroNFT is ERC721, IERC6454 {
 }
 ```
 
-```bash
-$ yarn hardhat compile
-...
-Successfully compiled 4 Solidity files
-Done in 12.02s.
-```
-
 ## Daily Limit Control
+
+- The Daily Limit Control feature will limit the number of transactions a user can perform in a day.
+- We can use another approach to limit the gas usage per day, though counter is more intuitive and easier to implement.
+- Gas usage limit will be handled in advanced guides.
+
+### 1. Create a DailyLimit contract
+
+- Create a new abstract contract named `DailyLimit.sol`.
+- The contract will have a function to check and update the daily limit for a user.
+- The limit will be reset every day at 6 am UTC.
+- If the user reaches the daily limit, the user will not be able to perform any more operations until the next day.
 
 ```solidity
 // contracts/contracts/paymaster/DailyLimit.sol
@@ -477,22 +559,27 @@ abstract contract DailyLimit {
      * @notice Check the daily limit for a user.
      * @param _user The user address.
      * @return reset Whether the counter should be reset.
-     * @return reacehad Whether the limit was reached.
+     * @return reached Whether the limit was reached.
      * @return counter The current counter value.
      */
-    function checkDailyLimit(address _user) public view returns (bool reset, bool reacehad, uint128 counter) {
+    function checkDailyLimit(address _user) public view returns (bool reset, bool reached, uint128 counter) {
         uint256 current = block.timestamp;
-        uint128 today6am = uint128((current / 1 days) * 1 days + 6 hours); // today 6am UTC
+        uint128 yesterday6am = uint128(((current - 1 days) / 1 days) * 1 days + 6 hours); // yesterday 6am UTC
+        uint128 today6am = yesterday6am + 1 days; // today 6am UTC
 
         Tracker memory tracker = dailyLimitTracker[_user];
 
-        if (tracker.timestamp < today6am && current >= today6am) {
-            // If the last update was before today 6am and the current time is after today 6am,
+        if (
+            (tracker.timestamp < today6am && current >= today6am)
+                || (tracker.timestamp < yesterday6am && current < today6am)
+        ) {
+            // 1. If the last update was before today 6am and the current time is after today 6am,
+            // 2. Or if the last update was before yesterday 6am and the current time is before today 6am, (in case the time is after midnight but before 6am)
             // the counter should be reset whether the limit was reached or not.
             reset = true;
         } else if (tracker.counter >= dailyLimit) {
             // If the counter reached the limit, the user should not be able to perform any more operations.
-            reacehad = true;
+            reached = true;
         }
 
         // Return the current counter value.
@@ -544,9 +631,15 @@ abstract contract DailyLimit {
 }
 ```
 
+### 2. Add the DailyLimit contract to the LibroPaymaster contract
+
+- Import the `DailyLimit` contract to the `LibroPaymaster` contract.
+
 ```solidity
 import {DailyLimit} from "./DailyLimit.sol";
 ```
+
+- Inherit the `DailyLimit` contract in the `LibroPaymaster` contract.
 
 ```solidity
 contract LibroPaymaster is IPaymaster, NftGated, DailyLimit, Ownable {
@@ -554,12 +647,16 @@ contract LibroPaymaster is IPaymaster, NftGated, DailyLimit, Ownable {
 }
 ```
 
+- Add the daily limit to the constructor of the `LibroPaymaster` contract.
+
 ```solidity
 constructor(address _nft, uint256 _dailyLimit) Ownable(msg.sender) {
     nft = IERC721(_nft);
     _setDailyLimit(_dailyLimit);
 }
 ```
+
+- Add the daily limit check in the `validateAndPayForPaymasterTransaction` function.
 
 ```solidity
 function validateAndPayForPaymasterTransaction(bytes32, bytes32, Transaction calldata _transaction)
@@ -582,6 +679,9 @@ function validateAndPayForPaymasterTransaction(bytes32, bytes32, Transaction cal
 }
 ```
 
+- Override the `setDailyLimit` function to add the `onlyOwner` modifier.
+- Only the owner of the contract can set the daily limit.
+
 ```solidity
  /**
  * @dev Override the daily limit setter to add the onlyOwner modifier.
@@ -591,15 +691,14 @@ function setDailyLimit(uint256 _dailyLimit) external override onlyOwner {
 }
 ```
 
-```solidity
-$ yarn hardhat compile
-
-...
-Successfully compiled 4 Solidity files
-Done in 12.02s.
-```
-
 ## Ban Filter
+
+### 1. Create a BanFilter contract
+
+- Create a new abstract contract named `BanFilter.sol`.
+- The contract will have a function to check if the user is banned.
+- The contract will have a function to set the ban status of a user.
+- If the user is banned, the user will not be able to perform any operations using the paymaster contract.
 
 ```solidity
 // contracts/contracts/paymaster/BanFilter.sol
@@ -655,15 +754,23 @@ abstract contract BanFilter {
 }
 ```
 
+### 2. Add the BanFilter contract to the LibroPaymaster contract
+
+- Import the `BanFilter` contract to the `LibroPaymaster` contract.
+
 ```solidity
 import {BanFilter} from "./BanFilter.sol";
 ```
+
+- Inherit the `BanFilter` contract in the `LibroPaymaster` contract.
 
 ```solidity
 contract LibroPaymaster is IPaymaster, NftGated, DailyLimit, BanFilter, Ownable {
     ...
 }
 ```
+
+- Add the ban filter check in the `validateAndPayForPaymasterTransaction` function.
 
 ```solidity
 function validateAndPayForPaymasterTransaction(bytes32, bytes32, Transaction calldata _transaction)
@@ -683,6 +790,9 @@ function validateAndPayForPaymasterTransaction(bytes32, bytes32, Transaction cal
 }
 ```
 
+- Override the `setBanStatus` function to add the `onlyOwner` modifier.
+- Only the owner of the contract can set the ban status of a user.
+
 ```solidity
 /**
  * @dev Override the ban status setter to add the onlyOwner modifier.
@@ -692,15 +802,12 @@ function setBanStatus(address _user, bool _status) external override onlyOwner {
 }
 ```
 
-```bash
-$ yarn hardhat compile
-
-...
-Successfully compiled 3 Solidity files
-Done in 9.98s.
-```
-
 ## Deploy the Paymaster Contract
+
+### 1. Create a Counter contract
+
+- Before deploying the `LibroPaymaster` contract, create a new `Counter` contract.
+- The `Counter` contract will be used to interact with the paymaster contract on the frontend.
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -715,9 +822,19 @@ contract Counter {
 }
 ```
 
+### 2. Compile the contracts
+
+> Make sure `isSystem` flag is set to `true` in the `zksolc` settings in the `hardhat.config.ts` file.
+
 ```bash
 $ yarn hardhat compile
 ```
+
+### 3. Deploy the LibroPaymaster contract and required contracts
+
+- Create a new script to deploy the `LibroPaymaster` contract and required contracts.
+- The script will deploy the `LibroNFT`, `LibroPaymaster`, and `Counter` contracts.
+- After deploying the contracts, send some ETH to the paymaster contract for gas sponsorship.
 
 ```typescript
 // contracts/deploy/deployLibroPaymaster.ts
@@ -756,6 +873,8 @@ export default async function () {
   console.log("Sent 0.2 ETH to paymaster");
 }
 ```
+
+- Run the script to deploy the contracts. The script will also verify the contracts on the zkSync block explorer.
 
 ```bash
 $ yarn hardhat deploy-zksync --script deployLibroPaymaster.ts
@@ -802,6 +921,11 @@ Done in 49.15s.
 
 ## Frontend Integration
 
+### 1. Create Files for the Address and ABI
+
+- Modify the `LibroNFT.ts` file to export the address and ABI of the `LibroPaymaster` contract.
+- ABI can be obtained from the `artifacts` directory after compiling the contracts or `deployments-zk` directory after deploying the contracts.
+
 ```typescript
 // frontend/libs/LibroNFT.ts
 const LIBRO_NFT_ADDRESS = "0x2DcA9FdA301B22Bcc3ca7FA7B30b506CAF9205B5" as `0x${string}`;;
@@ -811,6 +935,8 @@ const LIBRO_NFT_ABI = [
 
 export { LIBRO_NFT_ADDRESS, LIBRO_NFT_ABI };
 ```
+
+- Create a new file named `LibroPaymaster.ts` in the `libs` directory.
 
 ```typescript
 // frontend/libs/LibroPaymaster.ts
@@ -822,6 +948,8 @@ const LIBRO_PAYMASTER_ABI = [
 export { LIBRO_PAYMASTER_ADDRESS, LIBRO_PAYMASTER_ABI };
 ```
 
+- Create a new file named `Counter.ts` in the `libs` directory.
+
 ```typescript
 // frontend/libs/Counter.ts
 const COUNTER_ADDRESS = "0x42d625D2A7142F55952d8B63a5FCa907656c2887" as `0x${string}`;;
@@ -832,9 +960,10 @@ const COUNTER_ABI = [
 export { COUNTER_ADDRESS, COUNTER_ABI };
 ```
 
-### Fix somethings
+### 2. Create context directory
 
-- Move the `ZkSyncClient` context to the `context` directory
+- Create a new directory named `context` in the `frontend` directory.
+- Move the `ZkSyncClient` context from `app/providers.ts` to the `context/ZkSyncClient.ts` file.
 
 ```typescript
 // frontend/context/ZkSyncClient.ts
@@ -897,10 +1026,12 @@ const ZkSyncClientProvider = ({ children }: { children: React.ReactNode }) => {
 export { ZkSyncClientContext, ZkSyncClientProvider };
 ```
 
-- fix the import in the useZkSyncClient hook
+- Modify the import in the `hooks/useZkSyncClient.ts` file.
+- Extend the public client with the L2 actions of zkSync. This is required to estimate the transaction fee.
 
 ```typescript
-import { ZkSyncClientContext } from "@/context/ZkSyncClient";
+// frontend/hooks/useZkSyncClient.ts
+import { ZkSyncClientContext } from "@/context/ZkSyncClient"; // Fix the import
 import { useContext } from "react";
 import { createPublicClient, http } from "viem";
 import { zkSyncSepoliaTestnet } from "viem/chains";
@@ -919,9 +1050,11 @@ const useZkSyncClient = () => {
 export default useZkSyncClient;
 ```
 
-- fix the providers
+- Modify the import in the `app/providers.ts` file.
+- Modify export to default export.
 
 ```typescript
+// frontend/app/providers.ts
 "use client";
 
 import { useEffect, useState } from "react";
@@ -962,16 +1095,17 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-export default Providers;
+export default Providers; // Change the export to default export
 ```
 
-- fix the import in layout.tsx
+- Modify the import in the `app/layout.tsx` file.
 
 ```typescript
+// frontend/app/layout.tsx
 import Providers from "./providers";
 ```
 
-### Create Paymaster context
+### 3. Create Paymaster context
 
 ```typescript
 // frontend/types/index.ts
