@@ -1,88 +1,1003 @@
-<div align="center">
+# 2. General Paymaster
 
-<h1>LibroLink</h1>
-<img src="./assets/LibroNFT.png" width="48%" alt="LibroLink Logo">
-<h3>Let's build a Book Club dApp from scratch</h3>
-<a href="https://zk-sync-native-aa-demo.vercel.app/">Live Demo</a>
-<br>
-<br>
-<p>Test account for the demo</p>
-<pre>
-email: test-8685@privy.io
-phone: +1 555 555 2506
-otp: 459378</pre>
-</div>
+## Overview
 
 ## Table of Contents
 
-- [Introduction](#introduction)
-- [Prerequisites](#prerequisites)
-- [Getting Started](#getting-started)
-- [Sections](#sections)
-- [Roadmap](#roadmap)
-- [License](#license)
+- [General Paymaster](#general-paymaster)
+- [Considerations when integrating the Paymaster contract to your project](#considerations-when-integrating-the-paymaster-contract-to-your-project)
+- [NFT Gated Access](#nft-gated-access)
+- [Daily Limit Control](#daily-limit-control)
+- [Ban Filter](#ban-filter)
+- [Deploy the Paymaster Contract](#deploy-the-paymaster-contract)
+- [Frontend Integration](#frontend-integration)
+- [Demo](#demo)
+- [Conclusion](#conclusion)
+- [Next Steps](#next-steps)
+- [References](#references)
 
-## Introduction
+## General Paymaster
 
-This project is a quick guide to build a decentralized application (dApp) with:
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 
-- Social login
-- Native account abstraction
-- Paymaster
+import {
+    IPaymaster,
+    ExecutionResult,
+    PAYMASTER_VALIDATION_SUCCESS_MAGIC
+} from "@matterlabs/zksync-contracts/l2/system-contracts/interfaces/IPaymaster.sol";
+import {IPaymasterFlow} from "@matterlabs/zksync-contracts/l2/system-contracts/interfaces/IPaymasterFlow.sol";
+import {
+    TransactionHelper,
+    Transaction
+} from "@matterlabs/zksync-contracts/l2/system-contracts/libraries/TransactionHelper.sol";
+import {BOOTLOADER_FORMAL_ADDRESS} from "@matterlabs/zksync-contracts/l2/system-contracts/Constants.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-By the end of this guide, you will have a Book Club dApp where users can:
+/// @author Matter Labs
+/// @notice This contract does not include any validations other than using the paymaster general flow.
+contract GeneralPaymaster is IPaymaster, Ownable {
+    modifier onlyBootloader() {
+        require(msg.sender == BOOTLOADER_FORMAL_ADDRESS, "Only bootloader can call this method");
+        // Continue execution if called from the bootloader.
+        _;
+    }
 
-- Sign in with their social media accounts
-- Create a contract account
-- Gas sponsored transactions by a paymaster
-- Create reading logs for their favorite books
-- Create reading challenges
-- Join reading challenges and earn rewards
+    constructor() Ownable(msg.sender) {}
 
-Those who are interested in bridging Web2 users to Web3 can use this guide to build any dApp with their desired features.
+    function validateAndPayForPaymasterTransaction(bytes32, bytes32, Transaction calldata _transaction)
+        external
+        payable
+        onlyBootloader
+        returns (bytes4 magic, bytes memory context)
+    {
+        // By default we consider the transaction as accepted.
+        magic = PAYMASTER_VALIDATION_SUCCESS_MAGIC;
+        require(_transaction.paymasterInput.length >= 4, "The standard paymaster input must be at least 4 bytes long");
 
-> Each section will have a branch with the code for that specific feature.
+        bytes4 paymasterInputSelector = bytes4(_transaction.paymasterInput[0:4]);
+        if (paymasterInputSelector == IPaymasterFlow.general.selector) {
+            // Note, that while the minimal amount of ETH needed is tx.gasPrice * tx.gasLimit,
+            // neither paymaster nor account are allowed to access this context variable.
+            uint256 requiredETH = _transaction.gasLimit * _transaction.maxFeePerGas;
 
-## Prerequisites
+            // The bootloader never returns any data, so it can safely be ignored here.
+            (bool success,) = payable(BOOTLOADER_FORMAL_ADDRESS).call{value: requiredETH}("");
+            require(success, "Failed to transfer tx fee to the Bootloader. Paymaster balance might not be enough.");
+        } else {
+            revert("Unsupported paymaster flow in paymasterParams.");
+        }
+    }
 
-- [Node.js](https://nodejs.org/en/) (v20.10.0)
-- [Yarn](https://yarnpkg.com/getting-started/install) (v1.22.21)
-- [zksync-cli](https://docs.zksync.io/build/tooling/zksync-cli/getting-started.html) (v1.7.1)
+    function postTransaction(
+        bytes calldata _context,
+        Transaction calldata _transaction,
+        bytes32,
+        bytes32,
+        ExecutionResult _txResult,
+        uint256 _maxRefundedGas
+    ) external payable override onlyBootloader {}
 
-## Getting Started
+    function withdraw(address payable _to) external onlyOwner {
+        uint256 balance = address(this).balance;
+        (bool success,) = _to.call{value: balance}("");
+        require(success, "Failed to withdraw funds from paymaster.");
+    }
 
-1. Clone the repository
-
-```bash
-$ git clone https://github.com/piatoss3612/LibroLink.git
+    receive() external payable {}
+}
 ```
 
-2. Install dependencies
+- Modify the `GeneralPaymaster` contract
 
-```bash
-$ cd frontend && yarn install
+```solidity
+// contracts/contracts/paymaster/LibroPaymaster.sol
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+import {
+    IPaymaster,
+    ExecutionResult,
+    PAYMASTER_VALIDATION_SUCCESS_MAGIC
+} from "@matterlabs/zksync-contracts/l2/system-contracts/interfaces/IPaymaster.sol";
+import {IPaymasterFlow} from "@matterlabs/zksync-contracts/l2/system-contracts/interfaces/IPaymasterFlow.sol";
+import {
+    TransactionHelper,
+    Transaction
+} from "@matterlabs/zksync-contracts/l2/system-contracts/libraries/TransactionHelper.sol";
+import {BOOTLOADER_FORMAL_ADDRESS} from "@matterlabs/zksync-contracts/l2/system-contracts/Constants.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+
+contract LibroPaymaster is IPaymaster, Ownable {
+    // ====== Custom Errors ======
+    error LibroPaymaster__OnlyBootloaderCanCallThisMethod();
+    error LibroPaymaster__PaymasterInputShouldBeAtLeast4BytesLong();
+    error LibroPaymaster__FailedToTransferTxFeeToBootloader();
+    error LibroPaymaster__UnsupportedPaymasterFlowInPaymasterParams();
+    error LibroPaymaster__FailedToWithdrawFundsFromPaymaster();
+
+    // ====== Modifiers ======
+    modifier onlyBootloader() {
+        if (msg.sender != BOOTLOADER_FORMAL_ADDRESS) {
+            revert LibroPaymaster__OnlyBootloaderCanCallThisMethod();
+        }
+        // Continue execution if called from the bootloader.
+        _;
+    }
+
+    // ====== Constructor ======
+    constructor() Ownable(msg.sender) {}
+
+    /**
+     *
+     * @notice Function used to validate and pay for the zkSync transaction. It can be called only by the bootloader.
+     * @param _transaction Structure used to represent zkSync transaction.
+     * @return magic  PAYMASTER_VALIDATION_SUCCESS_MAGIC on validation success.
+     * @return context Empty bytes array, as it is not used in the current implementation.
+     */
+    function validateAndPayForPaymasterTransaction(bytes32, bytes32, Transaction calldata _transaction)
+        external
+        payable
+        onlyBootloader
+        returns (bytes4 magic, bytes memory context)
+    {
+        // By default we consider the transaction as accepted.
+        magic = PAYMASTER_VALIDATION_SUCCESS_MAGIC;
+        if (_transaction.paymasterInput.length < 4) {
+            revert LibroPaymaster__PaymasterInputShouldBeAtLeast4BytesLong();
+        }
+
+        bytes4 paymasterInputSelector = bytes4(_transaction.paymasterInput[0:4]);
+        if (paymasterInputSelector == IPaymasterFlow.general.selector) {
+            // Note, that while the minimal amount of ETH needed is tx.gasPrice * tx.gasLimit,
+            // neither paymaster nor account are allowed to access this context variable.
+            uint256 requiredETH = _transaction.gasLimit * _transaction.maxFeePerGas;
+
+            // The bootloader never returns any data, so it can safely be ignored here.
+            (bool success,) = payable(BOOTLOADER_FORMAL_ADDRESS).call{value: requiredETH}("");
+            if (!success) {
+                revert LibroPaymaster__FailedToTransferTxFeeToBootloader();
+            }
+        } else {
+            revert LibroPaymaster__UnsupportedPaymasterFlowInPaymasterParams();
+        }
+    }
+
+    /**
+     *
+     * @notice Function used to execute extra logic after the zkSync transaction is executed. It can be called only by the bootloader.
+     * @param _context Empty bytes array, as it is not used in the current implementation.
+     * @param _transaction Structure used to represent zkSync transaction.
+     * @param _txResult Enum used to represent the result of the transaction execution.
+     * @param _maxRefundedGas Maximum amount of gas that can be refunded to the paymaster.
+     */
+    function postTransaction(
+        bytes calldata _context,
+        Transaction calldata _transaction,
+        bytes32,
+        bytes32,
+        ExecutionResult _txResult,
+        uint256 _maxRefundedGas
+    ) external payable override onlyBootloader {}
+
+    function withdraw(address payable _to) external onlyOwner {
+        uint256 balance = address(this).balance;
+        (bool success,) = _to.call{value: balance}("");
+        if (!success) {
+            revert LibroPaymaster__FailedToWithdrawFundsFromPaymaster();
+        }
+    }
+
+    receive() external payable {}
+}
 ```
 
-3. Start the frontend
+```
+import { HardhatUserConfig } from "hardhat/config";
 
-```bash
-$ yarn start
+import "@matterlabs/hardhat-zksync";
+
+const config: HardhatUserConfig = {
+  defaultNetwork: "zkSyncSepoliaTestnet",
+  networks: {
+    ...,
+  },
+  zksolc: {
+    version: "latest",
+    settings: {
+      // Make sure 'isSystem' is set to 'true' to compile the system contracts.
+      isSystem: true,
+    },
+  },
+  solidity: {
+    version: "0.8.24",
+  },
+};
+
+export default config;
 ```
 
-## Sections
+```bash
+$ npx hardhat compile
 
+<<<<<<< HEAD
 - [1. Social Login with Privy and zkSync Network](https://github.com/piatoss3612/LibroLink/tree/01.social-login)
 - [2. General Paymaster with custom features](https://github.com/piatoss3612/LibroLink/tree/02.general-paymaster)
+=======
+...
+Successfully compiled 1 Solidity file
+Done in 9.19s.
+```
+>>>>>>> 2e68aed (Update README.md)
 
-## Roadmap
+## Considerations when integrating the Paymaster contract to your project
 
+<<<<<<< HEAD
 - [x] Implement social login
 - [x] Sponsor gas fees with a general paymaster
 - [ ] Gas fees payment in ERC20 tokens with a approval-based paymaster
 - [ ] Create a contract account
 - [ ] Create reading logs as NFTs
 - (WIP)
+=======
+## NFT Gated Access
+>>>>>>> 2e68aed (Update README.md)
 
-## License
+```solidity
+// contracts/contracts/paymaster/NftGated.sol
 
-This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+
+abstract contract NftGated {
+    error NftGated__SenderDoesNotOwnNft();
+
+    IERC721 public immutable nft;
+
+    /**
+     * @notice Checks if the sender owns an NFT.
+     * @param account Address of the account to check for NFT ownership.
+     */
+    function _requireNftOwner(address account) internal view {
+        if (!isNftOwner(account)) {
+            revert NftGated__SenderDoesNotOwnNft();
+        }
+    }
+
+    function isNftOwner(address account) public view returns (bool) {
+        return nft.balanceOf(account) > 0;
+    }
+}
+```
+
+```solidity
+import {NftGated, IERC721} from "./NftGated.sol";
+```
+
+```solidity
+contract LibroPaymaster is IPaymaster, NftGated, Ownable {
+    error LibroPaymaster__ZeroAddress();
+    ...
+}
+```
+
+```solidity
+constructor(address _nft) Ownable(msg.sender) {
+    nft = IERC721(_nft);
+}
+```
+
+```solidity
+function validateAndPayForPaymasterTransaction(bytes32, bytes32, Transaction calldata _transaction)
+    external
+    payable
+    onlyBootloader
+    returns (bytes4 magic, bytes memory context)
+{
+    // By default we consider the transaction as accepted.
+    magic = PAYMASTER_VALIDATION_SUCCESS_MAGIC;
+    if (_transaction.paymasterInput.length < 4) {
+        revert LibroPaymaster__PaymasterInputShouldBeAtLeast4BytesLong();
+    }
+
+    // Check if the user owns the NFT.
+    address userAddress = address(uint160(_transaction.from));
+    if (userAddress == address(0)) {
+        revert LibroPaymaster__ZeroAddress();
+    }
+
+    _requireNftOwner(userAddress);
+
+    bytes4 paymasterInputSelector = bytes4(_transaction.paymasterInput[0:4]);
+
+    ...
+}
+```
+
+```solidity
+// contracts/contracts/token/interfaces/IERC6454.sol
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+interface IERC6454 { /* is IERC165 */
+    /**
+     * @notice Used to check whether the given token is transferable or not.
+     * @dev If this function returns `false`, the transfer of the token MUST revert execution.
+     * @dev If the tokenId does not exist, this method MUST revert execution, unless the token is being checked for
+     *  minting.
+     * @dev The `from` parameter MAY be used to also validate the approval of the token for transfer, but anyone
+     *  interacting with this function SHOULD NOT rely on it as it is not mandated by the proposal.
+     * @param tokenId ID of the token being checked
+     * @param from Address from which the token is being transferred
+     * @param to Address to which the token is being transferred
+     * @return Boolean value indicating whether the given token is transferable
+     */
+    function isTransferable(uint256 tokenId, address from, address to) external view returns (bool);
+}
+```
+
+```solidity
+// contracts/contracts/token/LibroNFT.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.24;
+
+import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {IERC6454} from "./interfaces/IERC6454.sol";
+
+/**
+ * @title LibroNFT
+ * @dev Basic ERC721 token.
+ */
+contract LibroNFT is ERC721, IERC6454 {
+    error LibroNFT__Soulbound();
+
+    uint256 private _tokenId;
+    string private _tokenURI;
+
+    constructor(string memory uri) ERC721("LibroNFT", "LIBRO") {
+        _tokenURI = uri;
+    }
+
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        _requireOwned(tokenId);
+
+        return _tokenURI;
+    }
+
+    /**
+     * @dev Mints a new token to the sender.
+     */
+    function mint() external {
+        uint256 tokenId = _tokenId++;
+        _safeMint(msg.sender, tokenId);
+    }
+
+    /**
+     * @dev Burns the token.
+     */
+    function burn(uint256 tokenId) external {
+        _requireOwned(tokenId);
+        _burn(tokenId);
+    }
+
+    /**
+     * @notice Used to check whether the given token is transferable or not.
+     * @dev IERC-6454 implementation.
+     * @param tokenId token id to check
+     * @param from address from which the token is being transferred
+     * @param to address to which the token is being transferred
+     * @return Boolean value indicating whether the given token is transferable
+     */
+    function isTransferable(uint256 tokenId, address from, address to) public view returns (bool) {
+        /*
+            Only allow:
+            - Minting tokens to Non-Zero address
+            - Burning tokens by sending to Zero address
+         */
+
+        if (from == address(0x0) && to == address(0x0)) {
+            return false;
+        }
+
+        if (from == address(0x0) || to == address(0x0)) {
+            return true;
+        }
+
+        _requireOwned(tokenId);
+
+        // Disallow transfer of tokens.
+        return false;
+    }
+
+    /**
+     * @dev Overriding ERC721 _update function to add transfer restrictions.
+     */
+    function _update(address to, uint256 tokenId, address auth) internal virtual override returns (address) {
+        address from = _ownerOf(tokenId);
+
+        // Only allow minting and burning of tokens.
+        if (isTransferable(tokenId, from, to)) {
+            return super._update(to, tokenId, auth);
+        }
+
+        // Revert by default.
+        revert LibroNFT__Soulbound();
+    }
+
+    /**
+     * @dev Overriding IERC-165 supportsInterface function to add ERC-6454 support.
+     */
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return interfaceId == type(IERC6454).interfaceId || super.supportsInterface(interfaceId);
+    }
+}
+```
+
+```bash
+$ yarn hardhat compile
+...
+Successfully compiled 4 Solidity files
+Done in 12.02s.
+```
+
+## Daily Limit Control
+
+```solidity
+// contracts/contracts/paymaster/DailyLimit.sol
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+abstract contract DailyLimit {
+    error DailyLimit__DailyLimitReached(address user);
+
+    /**
+     * @notice Structure used to track the daily limit for a user.
+     */
+    struct Tracker {
+        uint128 counter;
+        uint128 timestamp;
+    }
+
+    uint256 public dailyLimit;
+
+    mapping(address => Tracker) public dailyLimitTracker;
+
+    event DailyLimitSet(uint256 newLimit);
+
+    /**
+     * @notice Check the daily limit for a user.
+     * @param _user The user address.
+     * @return reset Whether the counter should be reset.
+     * @return reacehad Whether the limit was reached.
+     * @return counter The current counter value.
+     */
+    function checkDailyLimit(address _user) public view returns (bool reset, bool reacehad, uint128 counter) {
+        uint256 current = block.timestamp;
+        uint128 today6am = uint128((current / 1 days) * 1 days + 6 hours); // today 6am UTC
+
+        Tracker memory tracker = dailyLimitTracker[_user];
+
+        if (tracker.timestamp < today6am && current >= today6am) {
+            // If the last update was before today 6am and the current time is after today 6am,
+            // the counter should be reset whether the limit was reached or not.
+            reset = true;
+        } else if (tracker.counter >= dailyLimit) {
+            // If the counter reached the limit, the user should not be able to perform any more operations.
+            reacehad = true;
+        }
+
+        // Return the current counter value.
+        counter = tracker.counter;
+    }
+
+    /**
+     * @notice Update the daily limit for a user.
+     * @param _user The user address.
+     */
+    function _updateDailyLimit(address _user) internal {
+        (bool reset, bool reached,) = checkDailyLimit(_user);
+
+        // If the limit was reached, revert the transaction.
+        if (reached) {
+            revert DailyLimit__DailyLimitReached(_user);
+        }
+
+        Tracker storage tracker = dailyLimitTracker[_user];
+
+        // If the counter should be reset, set it to 1 otherwise increment it.
+        if (reset) {
+            tracker.counter = 1;
+        } else {
+            tracker.counter++;
+        }
+
+        // Update the timestamp.
+        tracker.timestamp = uint128(block.timestamp);
+    }
+
+    /**
+     * @notice Set the daily limit.
+     * @dev virtual function to allow overriding it in derived contracts.
+     * @param _dailyLimit The new daily limit.
+     */
+    function setDailyLimit(uint256 _dailyLimit) external virtual {
+        _setDailyLimit(_dailyLimit);
+    }
+
+    /**
+     * @notice Set the daily limit.
+     * @param _dailyLimit The new daily limit.
+     */
+    function _setDailyLimit(uint256 _dailyLimit) internal {
+        dailyLimit = _dailyLimit;
+        emit DailyLimitSet(_dailyLimit);
+    }
+}
+```
+
+```solidity
+import {DailyLimit} from "./DailyLimit.sol";
+```
+
+```solidity
+contract LibroPaymaster is IPaymaster, NftGated, DailyLimit, Ownable {
+    ...
+}
+```
+
+```solidity
+constructor(address _nft, uint256 _dailyLimit) Ownable(msg.sender) {
+    nft = IERC721(_nft);
+    _setDailyLimit(_dailyLimit);
+}
+```
+
+```solidity
+function validateAndPayForPaymasterTransaction(bytes32, bytes32, Transaction calldata _transaction)
+    external
+    payable
+    onlyBootloader
+    returns (bytes4 magic, bytes memory context)
+{
+    ...
+
+    bytes4 paymasterInputSelector = bytes4(_transaction.paymasterInput[0:4]);
+    if (paymasterInputSelector == IPaymasterFlow.general.selector) {
+        // Check if the daily limit was reached.
+        _updateDailyLimit(userAddress);
+
+        ...
+    } else {
+        revert LibroPaymaster__UnsupportedPaymasterFlowInPaymasterParams();
+    }
+}
+```
+
+```solidity
+ /**
+ * @dev Override the daily limit setter to add the onlyOwner modifier.
+ */
+function setDailyLimit(uint256 _dailyLimit) external override onlyOwner {
+    _setDailyLimit(_dailyLimit);
+}
+```
+
+```solidity
+$ yarn hardhat compile
+
+...
+Successfully compiled 4 Solidity files
+Done in 12.02s.
+```
+
+## Ban Filter
+
+```solidity
+// contracts/contracts/paymaster/BanFilter.sol
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+abstract contract BanFilter {
+    error BanFilter__UserBanned(address user);
+
+    mapping(address => bool) public bannedUsers;
+
+    event BanStatusChanged(address indexed user, bool status);
+
+    /**
+     * @notice Check if the user is banned.
+     * @param _user The user address.
+     */
+    function _requireNotBanned(address _user) internal view {
+        if (bannedUsers[_user]) {
+            revert BanFilter__UserBanned(_user);
+        }
+    }
+
+    /**
+     * @notice Check if the user is banned.
+     * @param _user The user address.
+     */
+    function isBanned(address _user) external view returns (bool) {
+        return bannedUsers[_user];
+    }
+
+    /**
+     * @notice Set the ban status of a user.
+     * @dev virtual function to allow overriding in derived contracts.
+     * @param _user The user address.
+     * @param _status The ban status.
+     */
+    function setBanStatus(address _user, bool _status) external virtual {
+        _setBanStatus(_user, _status);
+    }
+
+    /**
+     * @notice Set the ban status of a user.
+     * @dev internal function to allow overriding in derived contracts.
+     * @param _user The user address.
+     * @param _status The ban status.
+     */
+    function _setBanStatus(address _user, bool _status) internal {
+        bannedUsers[_user] = _status;
+        emit BanStatusChanged(_user, _status);
+    }
+}
+```
+
+```solidity
+import {BanFilter} from "./BanFilter.sol";
+```
+
+```solidity
+contract LibroPaymaster is IPaymaster, NftGated, DailyLimit, BanFilter, Ownable {
+    ...
+}
+```
+
+```solidity
+function validateAndPayForPaymasterTransaction(bytes32, bytes32, Transaction calldata _transaction)
+    external
+    payable
+    onlyBootloader
+    returns (bytes4 magic, bytes memory context)
+{
+    ...
+
+    _requireNftOwner(userAddress);
+
+    // Check if the user is banned.
+    _requireNotBanned(userAddress);
+
+    ...
+}
+```
+
+```solidity
+/**
+ * @dev Override the ban status setter to add the onlyOwner modifier.
+ */
+function setBanStatus(address _user, bool _status) external override onlyOwner {
+    _setBanStatus(_user, _status);
+}
+```
+
+```bash
+$ yarn hardhat compile
+
+...
+Successfully compiled 3 Solidity files
+Done in 9.98s.
+```
+
+## Deploy the Paymaster Contract
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+contract Counter {
+    uint256 public count;
+
+    function increment() public {
+        count += 1;
+    }
+}
+```
+
+```bash
+$ yarn hardhat compile
+```
+
+```typescript
+// contracts/deploy/deployLibroPaymaster.ts
+import { ethers } from "ethers";
+import { deployContract, getWallet } from "./utils";
+
+export default async function () {
+  const tokenURI =
+    "https://green-main-hoverfly-930.mypinata.cloud/ipfs/QmXeQG8Kd3KT6rWaDKD9Eg2MrmRR7GG2jijgFDpcWK1Dyk";
+  const nft = await deployContract("LibroNFT", [tokenURI]);
+
+  // Deploy LibroPaymaster
+  const nftAddress = await nft.getAddress();
+  const dailyLimit = 3;
+
+  const paymaster = await deployContract("LibroPaymaster", [
+    nftAddress,
+    dailyLimit,
+  ]);
+
+  // Deploy Counter
+  await deployContract("Counter", []);
+
+  // Send some ETH to the paymaster
+  const wallet = getWallet();
+  const paymasterAddress = await paymaster.getAddress();
+  const value = ethers.parseEther("0.2");
+
+  await (
+    await wallet.sendTransaction({
+      to: paymasterAddress,
+      value,
+    })
+  ).wait();
+
+  console.log("Sent 0.2 ETH to paymaster");
+}
+```
+
+```bash
+$ yarn hardhat deploy-zksync --script deployLibroPaymaster.ts
+yarn run v1.22.21
+
+Starting deployment process of "LibroNFT"...
+Estimated deployment cost: 0.000122854 ETH
+
+"LibroNFT" was successfully deployed:
+ - Contract address: 0x2DcA9FdA301B22Bcc3ca7FA7B30b506CAF9205B5
+ - Contract source: contracts/token/LibroNFT.sol:LibroNFT
+ - Encoded constructor arguments: 0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000006268747470733a2f2f677265656e2d6d61696e2d686f766572666c792d3933302e6d7970696e6174612e636c6f75642f697066732f516d58655147384b64334b5436725761444b44394567324d726d5252374747326a696a6746447063574b3144796b000000000000000000000000000000000000000000000000000000000000
+
+Requesting contract verification...
+Your verification ID is: 15396
+Contract successfully verified on zkSync block explorer!
+
+Starting deployment process of "LibroPaymaster"...
+Estimated deployment cost: 0.0000084064 ETH
+
+"LibroPaymaster" was successfully deployed:
+ - Contract address: 0x8624cfA52d5F93c0174D8d318fD9E531592D176E
+ - Contract source: contracts/paymaster/LibroPaymaster.sol:LibroPaymaster
+ - Encoded constructor arguments: 0x0000000000000000000000002dca9fda301b22bcc3ca7fa7b30b506caf9205b50000000000000000000000000000000000000000000000000000000000000003
+
+Requesting contract verification...
+Your verification ID is: 15397
+Contract successfully verified on zkSync block explorer!
+
+Starting deployment process of "Counter"...
+Estimated deployment cost: 0.0000068427 ETH
+
+"Counter" was successfully deployed:
+ - Contract address: 0x42d625D2A7142F55952d8B63a5FCa907656c2887
+ - Contract source: contracts/Counter.sol:Counter
+ - Encoded constructor arguments: 0x
+
+Requesting contract verification...
+Your verification ID is: 15400
+Contract successfully verified on zkSync block explorer!
+Sent 0.2 ETH to paymaster
+Done in 49.15s.
+```
+
+## Frontend Integration
+
+```typescript
+// frontend/libs/LibroNFT.ts
+const LIBRO_NFT_ADDRESS = "0x2DcA9FdA301B22Bcc3ca7FA7B30b506CAF9205B5" as `0x${string}`;;
+const LIBRO_NFT_ABI = [
+    ...
+] as const;
+
+export { LIBRO_NFT_ADDRESS, LIBRO_NFT_ABI };
+```
+
+```typescript
+// frontend/libs/LibroPaymaster.ts
+const LIBRO_PAYMASTER_ADDRESS = "0x8624cfA52d5F93c0174D8d318fD9E531592D176E" as `0x${string}`;;
+const LIBRO_PAYMASTER_ABI = [
+    ...
+] as const;
+
+export { LIBRO_PAYMASTER_ADDRESS, LIBRO_PAYMASTER_ABI };
+```
+
+```typescript
+// frontend/libs/Counter.ts
+const COUNTER_ADDRESS = "0x42d625D2A7142F55952d8B63a5FCa907656c2887" as `0x${string}`;;
+const COUNTER_ABI = [
+    ...
+] as const;
+
+export { COUNTER_ADDRESS, COUNTER_ABI };
+```
+
+### Fix somethings
+
+- Move the `ZkSyncClient` context to the `context` directory
+
+```typescript
+// frontend/context/ZkSyncClient.ts
+import { createContext, useEffect, useState } from "react";
+import { ConnectedWallet, usePrivy, useWallets } from "@privy-io/react-auth";
+import { WalletClient, createWalletClient, custom } from "viem";
+import { eip712WalletActions, zkSyncSepoliaTestnet } from "viem/zksync";
+
+interface ZkSyncClientContextValue {
+  wallet: ConnectedWallet | null;
+  zkSyncClient: WalletClient | null;
+}
+
+const ZkSyncClientContext = createContext({} as ZkSyncClientContextValue);
+
+const ZkSyncClientProvider = ({ children }: { children: React.ReactNode }) => {
+  const { ready, authenticated } = usePrivy();
+  const { wallets } = useWallets();
+  const [wallet, setWallet] = useState<ConnectedWallet | null>(null);
+  const [zkSyncClient, setZkSyncClient] = useState<WalletClient | null>(null);
+
+  const zkSyncSetup = async (wallet: ConnectedWallet) => {
+    await wallet.switchChain(zkSyncSepoliaTestnet.id); // Switch to zkSync chain
+    const provider = await wallet.getEthereumProvider(); // Get EIP-1193 provider
+
+    const client = createWalletClient({
+      account: wallet.address as `0x${string}`,
+      chain: zkSyncSepoliaTestnet,
+      transport: custom(provider),
+    }).extend(eip712WalletActions());
+
+    setWallet(wallet);
+    setZkSyncClient(client);
+  };
+
+  useEffect(() => {
+    if (ready && authenticated) {
+      const embeddedWallet: ConnectedWallet | undefined = wallets.find(
+        (wallet) => wallet.walletClientType === "privy"
+      );
+
+      if (embeddedWallet) {
+        zkSyncSetup(embeddedWallet);
+      }
+    }
+  }, [ready, authenticated, wallets]);
+
+  return (
+    <ZkSyncClientContext.Provider
+      value={{
+        wallet,
+        zkSyncClient,
+      }}
+    >
+      {children}
+    </ZkSyncClientContext.Provider>
+  );
+};
+
+export { ZkSyncClientContext, ZkSyncClientProvider };
+```
+
+- fix the import in the useZkSyncClient hook
+
+```typescript
+import { ZkSyncClientContext } from "@/context/ZkSyncClient";
+import { useContext } from "react";
+import { createPublicClient, http } from "viem";
+import { zkSyncSepoliaTestnet } from "viem/chains";
+import { publicActionsL2 } from "viem/zksync";
+
+const useZkSyncClient = () => {
+  const publicClient = createPublicClient({
+    chain: zkSyncSepoliaTestnet,
+    transport: http(),
+  }).extend(publicActionsL2()); // Extend the client with L2 actions of zkSync
+  const { wallet, zkSyncClient } = useContext(ZkSyncClientContext);
+
+  return { wallet, publicClient, zkSyncClient };
+};
+
+export default useZkSyncClient;
+```
+
+- fix the providers
+
+```typescript
+"use client";
+
+import { useEffect, useState } from "react";
+import { PrivyProvider } from "@privy-io/react-auth";
+import { ChakraProvider } from "@chakra-ui/react";
+import { zkSyncSepoliaTestnet } from "viem/zksync";
+import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
+import { ZkSyncClientProvider } from "@/context/ZkSyncClient";
+
+const Providers = ({ children }: { children: React.ReactNode }) => {
+  const queryClient = new QueryClient();
+  const [mounted, setMounted] = useState<boolean>(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  return (
+    <PrivyProvider
+      appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID || ""}
+      config={{
+        // Configure the default chain and supported chains with zkSyncSepoliaTestnet
+        defaultChain: zkSyncSepoliaTestnet,
+        supportedChains: [zkSyncSepoliaTestnet],
+        // Create embedded wallets for users who don't have a wallet at first login
+        embeddedWallets: {
+          createOnLogin: "users-without-wallets",
+        },
+      }}
+    >
+      <ChakraProvider>
+        <ZkSyncClientProvider>
+          <QueryClientProvider client={queryClient}>
+            {mounted && children}
+          </QueryClientProvider>
+        </ZkSyncClientProvider>
+      </ChakraProvider>
+    </PrivyProvider>
+  );
+};
+
+export default Providers;
+```
+
+- fix the import in layout.tsx
+
+```typescript
+import Providers from "./providers";
+```
+
+### Create Paymaster context
+
+```typescript
+// frontend/types/index.ts
+import { Account, Address } from "viem";
+
+interface TransactionRequest {
+  name: string; // The name of the request
+  from?: Account | Address; // The account or address from which the transaction is sent
+  to: `0x${string}`; // The address to which the transaction is sent
+  data: `0x${string}`; // The data of the transaction
+  value?: `0x${string}`; // The value of the transaction
+}
+
+export { TransactionRequest };
+```
+
+```bash
+$ yarn add @chakra-ui/icons
+```
+
+## Demo
+
+## Conclusion
+
+## Next Steps
+
+## References
+
+- [zkSync: NFT Gated Paymaster](https://docs.zksync.io/build/tutorials/dapp-development/gated-nft-paymaster-tutorial.html)
