@@ -68,8 +68,8 @@ const PaymasterProvider = ({ children }: { children: React.ReactNode }) => {
   const { data: estimateFee } = useQuery({
     queryKey: ["estimateFee", wallet?.address],
     queryFn: getEstimateFee,
-    enabled: !!publicClient && !!wallet && !!request, // Only fetch when the wallet and request are available
-    refetchInterval: 3000, // Refetch every 3 seconds
+    enabled: !!publicClient && !!wallet && !!request,
+    refetchInterval: 3000,
   });
 
   const estimateFeeValue =
