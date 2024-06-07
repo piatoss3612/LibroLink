@@ -6,7 +6,7 @@ import {
 } from "@/libs/LibroPaymaster";
 import { PaymasterRequest } from "@/types";
 import { useDisclosure, useToast } from "@chakra-ui/react";
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { createContext, useState } from "react";
 import { formatEther } from "viem";
 import {
@@ -41,15 +41,6 @@ const PaymasterProvider = ({ children }: { children: React.ReactNode }) => {
   const [txStatus, setTxStatus] = useState<"success" | "reverted" | "">("");
   const [txHash, setTxHash] = useState<string>("");
 
-  // Function to get the gas price
-  const getGasPrice = async (): Promise<bigint> => {
-    if (!publicClient) {
-      throw new Error("Public client not found");
-    }
-
-    return await publicClient.getGasPrice();
-  };
-
   // Function to get the estimate fee of zkSync network for a transaction
   const getEstimateFee = async (): Promise<EstimateFeeReturnType> => {
     if (!publicClient || !wallet) {
@@ -74,31 +65,20 @@ const PaymasterProvider = ({ children }: { children: React.ReactNode }) => {
     });
   };
 
-  // Queries to get the gas price and estimate fee
-  const [gasPriceQuery, estimateFeeQuery] = useQueries({
-    queries: [
-      {
-        queryKey: ["gasPrice"],
-        queryFn: getGasPrice,
-        enabled: !!publicClient, // Only fetch when the public client is available
-        refetchInterval: 3000, // Refetch every 3 seconds
-      },
-      {
-        queryKey: ["estimateFee", wallet?.address],
-        queryFn: getEstimateFee,
-        enabled: !!publicClient && !!wallet && !!request, // Only fetch when the wallet and request are available
-        refetchInterval: 3000, // Refetch every 3 seconds
-      },
-    ],
+  const { data: estimateFee } = useQuery({
+    queryKey: ["estimateFee", wallet?.address],
+    queryFn: getEstimateFee,
+    enabled: !!publicClient && !!wallet && !!request, // Only fetch when the wallet and request are available
+    refetchInterval: 3000, // Refetch every 3 seconds
   });
 
-  const gasPrice = formatEther(gasPriceQuery.data || BigInt(0));
-  const estimateFee =
-    estimateFeeQuery.data ||
+  const estimateFeeValue =
+    estimateFee ||
     ({ gasLimit: BigInt(0), maxFeePerGas: BigInt(0) } as EstimateFeeReturnType);
-  const fee = formatEther(estimateFee.gasLimit);
+  const gasPrice = formatEther(estimateFeeValue.maxFeePerGas);
+  const fee = formatEther(estimateFeeValue.gasLimit);
   const cost = formatEther(
-    (gasPriceQuery.data || BigInt(0)) * estimateFee.gasLimit
+    estimateFeeValue.maxFeePerGas * estimateFeeValue.gasLimit
   );
 
   // Function to open the paymaster modal
@@ -244,32 +224,32 @@ const PaymasterProvider = ({ children }: { children: React.ReactNode }) => {
       {
         queryKey: ["dailyLimit"],
         queryFn: getDailyLimit,
-        enabled: !!publicClient, // Only fetch when the public client is available
-        refetchInterval: 3000, // Refetch every 3 seconds
+        enabled: !!publicClient,
+        refetchInterval: 3000,
       },
       {
         queryKey: ["checkDailyLimit", wallet?.address],
         queryFn: async () => {
           return await checkDailyLimit(wallet!.address as `0x${string}`);
         },
-        enabled: !!publicClient && !!wallet, // Only fetch when the public client and wallet are available
-        refetchInterval: 3000, // Refetch every 3 seconds
+        enabled: !!publicClient && !!wallet,
+        refetchInterval: 3000,
       },
       {
         queryKey: ["isBanned", wallet?.address],
         queryFn: async () => {
           return await getIsBanned(wallet!.address as `0x${string}`);
         },
-        enabled: !!publicClient && !!wallet, // Only fetch when the public client and wallet are available
-        refetchInterval: 3000, // Refetch every 3 seconds
+        enabled: !!publicClient && !!wallet,
+        refetchInterval: 3000,
       },
       {
         queryKey: ["isNftOwner", wallet?.address],
         queryFn: async () => {
           return await getIsNftOwner(wallet!.address as `0x${string}`);
         },
-        enabled: !!publicClient && !!wallet, // Only fetch when the public client and wallet are available
-        refetchInterval: 3000, // Refetch every 3 seconds
+        enabled: !!publicClient && !!wallet,
+        refetchInterval: 3000,
       },
     ],
   });

@@ -71,12 +71,14 @@ $ yarn start
 
 ## Sections
 
-- [1. Social Login with Privy and zkSync Network](https://github.com/piatoss3612/zkSync-native-aa-demo/tree/01.social-login)
+- [1. Social Login with Privy and zkSync Network](https://github.com/piatoss3612/LibroLink/tree/01.social-login)
+- [2. General Paymaster with custom features](https://github.com/piatoss3612/LibroLink/tree/02.general-paymaster)
 
 ## Roadmap
 
 - [x] Implement social login
-- [ ] Sponsor gas fees with a paymaster
+- [x] Sponsor gas fees with a general paymaster
+- [ ] Gas fees payment in ERC20 tokens with a approval-based paymaster
 - [ ] Create a contract account
 - [ ] Create reading logs as NFTs
 - (WIP)
