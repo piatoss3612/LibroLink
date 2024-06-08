@@ -23,6 +23,8 @@ otp: 459378</pre>
   - [Target Users](#target-users)
   - [Future Roadmap](#future-roadmap)
 - [Guides for Building dApps with zkSync Native Account Abstraction](#guides-for-building-dapps-with-zksync-native-account-abstraction)
+  - [Introduction](#introduction)
+  - [Guide Sections](#guide-sections)
 - [Prerequisites](#prerequisites)
 - [Getting Started](#getting-started)
 - [Roadmap](#roadmap)
@@ -100,6 +102,8 @@ This project is a simple and intuitive platform where users can record their rea
 
 ## Guides for Building dApps with zkSync Native Account Abstraction
 
+### Introduction
+
 A series of step-by-step guides to build decentralized applications with zkSync Native Account Abstraction.
 
 The guides will cover the following topics:
@@ -117,6 +121,13 @@ By the end of this guide, you will have a fully functional dApp where users can:
 - Create reading challenges, join reading challenges, and earn rewards
 
 > Each section will have a branch with the code for that specific feature.
+
+### Guide Sections
+
+| Section                                                                                                         | Category         | Difficulty |
+| --------------------------------------------------------------------------------------------------------------- | ---------------- | ---------- |
+| [1. Social Login with Privy and zkSync Network](https://github.com/piatoss3612/LibroLink/tree/01.social-login)  | dApp Core        | ★★☆☆☆      |
+| [2. General Paymaster with custom features](https://github.com/piatoss3612/LibroLink/tree/02.general-paymaster) | zkSync Native AA | ★★★☆☆      |
 
 ## Prerequisites
 
