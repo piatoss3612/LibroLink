@@ -39,9 +39,17 @@ This tutorial is for developers who:
 
 ## General Paymaster
 
-### 1. Take a look at the General Paymaster contract
+### 0. What is a Paymaster?
 
-- [GeneralPaymaster.sol](https://github.com/matter-labs/zksync-contract-templates/blob/main/templates/hardhat/solidity/contracts/paymasters/GeneralPaymaster.sol)
+- A paymaster is a contract that pays fees for the transactions on behalf of the user.
+- Or accepts ERC20 tokens as a payment for the transaction fees.
+- zkSync provides native support for EOAs to leverage the paymaster contract.
+- These features are useful for onboarding Web2 users to Web3 by providing a gasless experience.
+
+### 1. General Paymaster Contract
+
+- [GeneralPaymaster.sol](https://github.com/matter-labs/zksync-contract-templates/blob/main/templates/hardhat/solidity/contracts/paymasters/GeneralPaymaster.sol) is a basic general paymaster contract provided by zkSync.
+- The default flow of the general paymaster contract only supports the ETH payment for the transaction fees.
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -114,11 +122,82 @@ contract GeneralPaymaster is IPaymaster, Ownable {
 }
 ```
 
-### 2. General Paymaster Flow
+### 2. IPaymaster Interface
 
-TODO: Add the general paymaster flow
+- [IPaymaster.sol](https://github.com/matter-labs/era-contracts/blob/main/system-contracts/contracts/interfaces/IPaymaster.sol) is the interface for the paymaster contract.
+- Every paymaster contract should implement the `IPaymaster` interface.
+- The interface includes two functions: `validateAndPayForPaymasterTransaction` and `postTransaction`.
+- The `validateAndPayForPaymasterTransaction` function is called by the bootloader to verify that the paymaster agrees to pay for the fee for the transaction.
+- The `postTransaction` function is called by the bootloader after the execution of the transaction. It is not guaranteed that this method will be called at all.
 
-### 3. Create a new Paymaster contract
+```solidity
+// SPDX-License-Identifier: MIT
+
+pragma solidity 0.8.20;
+
+import "../libraries/TransactionHelper.sol";
+
+enum ExecutionResult {
+    Revert,
+    Success
+}
+
+bytes4 constant PAYMASTER_VALIDATION_SUCCESS_MAGIC = IPaymaster.validateAndPayForPaymasterTransaction.selector;
+
+interface IPaymaster {
+    /// @dev Called by the bootloader to verify that the paymaster agrees to pay for the
+    /// fee for the transaction. This transaction should also send the necessary amount of funds onto the bootloader
+    /// address.
+    /// @param _txHash The hash of the transaction
+    /// @param _suggestedSignedHash The hash of the transaction that is signed by an EOA
+    /// @param _transaction The transaction itself.
+    /// @return magic The value that should be equal to the signature of the validateAndPayForPaymasterTransaction
+    /// if the paymaster agrees to pay for the transaction.
+    /// @return context The "context" of the transaction: an array of bytes of length at most 1024 bytes, which will be
+    /// passed to the `postTransaction` method of the account.
+    /// @dev The developer should strive to preserve as many steps as possible both for valid
+    /// and invalid transactions as this very method is also used during the gas fee estimation
+    /// (without some of the necessary data, e.g. signature).
+    function validateAndPayForPaymasterTransaction(
+        bytes32 _txHash,
+        bytes32 _suggestedSignedHash,
+        Transaction calldata _transaction
+    ) external payable returns (bytes4 magic, bytes memory context);
+
+    /// @dev Called by the bootloader after the execution of the transaction. Please note that
+    /// there is no guarantee that this method will be called at all. Unlike the original EIP4337,
+    /// this method won't be called if the transaction execution results in out-of-gas.
+    /// @param _context, the context of the execution, returned by the "validateAndPayForPaymasterTransaction" method.
+    /// @param  _transaction, the users' transaction.
+    /// @param _txResult, the result of the transaction execution (success or failure).
+    /// @param _maxRefundedGas, the upper bound on the amout of gas that could be refunded to the paymaster.
+    /// @dev The exact amount refunded depends on the gas spent by the "postOp" itself and so the developers should
+    /// take that into account.
+    function postTransaction(
+        bytes calldata _context,
+        Transaction calldata _transaction,
+        bytes32 _txHash,
+        bytes32 _suggestedSignedHash,
+        ExecutionResult _txResult,
+        uint256 _maxRefundedGas
+    ) external payable;
+}
+```
+
+### 3. General Paymaster Flow
+
+![Paymaster Flow](https://docs.zksync.io/_ipx/q_90/images/101-paymasters/zksync-paymaster.png)
+
+1. The transaction with `paymaster params` is sent to the mempool.
+
+- `paymaster params` is a part of the transaction that contains the additional information to leverage the paymaster contract.
+
+2. The system contract `Bootloader` checks the `paymaster params` and calls the `validateAndPayForPaymasterTransaction` function of the paymaster contract.
+3. The paymaster contract verifies the transaction and pays at least `tx.gasPrice * tx.gasLimit` ETH for the transaction to the bootloader.
+4. The transaction is executed.
+5. The system contract `Bootloader` calls the `postTransaction` function of the paymaster contract, which can be used to execute additional logic after the transaction is executed.
+
+### 4. Create a new Paymaster contract
 
 - Create a new Paymaster contract. We will name it `LibroPaymaster.sol`.
 - Add the custom errors to the contract as shown below.
@@ -226,7 +305,7 @@ contract LibroPaymaster is IPaymaster, Ownable {
 }
 ```
 
-### 4. Compile the contract
+### 5. Compile the Paymaster contract
 
 - Before compiling the contract, make sure to add the `isSystem` flag to the `zksolc` settings in the `hardhat.config.ts` file.
 - `isSystem` flag is required to enable the interactivity with the zkSync system contracts.
@@ -274,7 +353,7 @@ Done in 9.19s.
 - The General Paymaster contract does not include any validations other than using the paymaster general flow.
 - It means that anyone can use the paymaster to get support for their transactions.
 - It is not suitable for a production environment, as it can be misused by malicious users and your paymaster can run out of funds.
-- To prevent this, you need to consider adding custom features to the paymaster contract.
+- To prevent this, you need to consider adding custom features to the paymaster contract to control the usage of the paymaster.
 
 ### 2. Custom Features
 
@@ -534,7 +613,7 @@ contract LibroNFT is ERC721, IERC6454 {
 ## Daily Limit Control
 
 - The Daily Limit Control feature will limit the number of transactions a user can perform in a day.
-- We can use another approach to limit the gas usage per day, though counter is more intuitive and easier to implement.
+- We can use another approach like limiting the gas usage per day, though counter is more intuitive and easier to implement.
 - Gas usage limit will be handled in advanced guides.
 
 ### 1. Create a DailyLimit contract
@@ -1711,7 +1790,55 @@ const PaymasterProvider = ({ children }: { children: React.ReactNode }) => {
 export { PaymasterProvider, PaymasterContext };
 ```
 
-### 7. Modify the Providers component
+### 7. How to send a transaction with the Paymaster
+
+- At the last section, we created the `ZkSyncClient` context which provides the `publicClient` and `zkSyncClient` objects.
+- `zkSyncClient` is extended with the EIP-712 actions of zkSync for signing the typed structured data.
+
+```tsx
+const client = createWalletClient({
+  account: wallet.address as `0x${string}`,
+  chain: zkSyncSepoliaTestnet,
+  transport: custom(provider),
+}).extend(eip712WalletActions());
+```
+
+- Once the user confirms the transaction, the `confirmPayment` function is called to send the transaction with the paymaster.
+
+```tsx
+const confirmPayment = async () => {
+  ...
+};
+```
+
+- The `confirmPayment` function first gets the paymaster input of general type.
+
+```tsx
+const paymasterInput = getGeneralPaymasterInput({
+  innerInput: "0x",
+});
+```
+
+- Then it sends the transaction with the paymaster parameters.
+- In detail, the `sendTransaction` works as follows:
+  1. Check the request fields
+  2. If paymaster parameters are found, request to signer to sign the digest of EIP-712 typed structured data
+  3. Attach the signature to the transaction and send the serialized transaction to the zkSync network
+- The `sendTransaction` function returns the transaction hash after the transaction is processed.
+
+```tsx
+const hash = await zkSyncClient.sendTransaction({
+  account: request.from || (wallet.address as `0x${string}`),
+  to: request.to,
+  data: request.data,
+  value: request.value,
+  chain: zkSyncSepoliaTestnet,
+  paymaster: LIBRO_PAYMASTER_ADDRESS,
+  paymasterInput,
+});
+```
+
+### 8. Modify the Providers component
 
 - Modify the `Providers` component to wrap the children with the `PaymasterProvider` component.
 - The `PaymasterProvider` component depends on the `ZkSyncClientProvider` component, thus it should be wrapped inside the `ZkSyncClientProvider` component.
@@ -1751,8 +1878,8 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
       <ChakraProvider>
         <ZkSyncClientProvider>
           <QueryClientProvider client={queryClient}>
-            {/* 
-                Wrap the children with the PaymasterProvider 
+            {/*
+                Wrap the children with the PaymasterProvider
                 to provide the PaymasterContext context
             */}
             <PaymasterProvider>{mounted && children}</PaymasterProvider>
@@ -1766,7 +1893,7 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
 export default Providers;
 ```
 
-### 8. Create the usePaymaster hook
+### 9. Create the usePaymaster hook
 
 - Create a new file named `usePaymaster.ts` in the `hooks` directory.
 - Create the `usePaymaster` hook to access the `PaymasterContext` context.
@@ -1782,7 +1909,7 @@ const usePaymaster = () => {
 export default usePaymaster;
 ```
 
-### 9. Modify the Main component
+### 10. Modify the Main component
 
 - Modify the `Main` component to use the `usePaymaster` hook and open the paymaster modal to interact with the `Counter` contract.
 - The `getCounterValue` function will get the counter value from the `Counter` contract. The counter value will be displayed in the UI.
@@ -1896,14 +2023,19 @@ export default Main;
 
 ## Demo
 
+### Run the Application Locally
+
 - Run the frontend application or access the deployed application to leverage the paymaster integration.
-- [Demo Application](https://zk-sync-native-aa-demo-6toua303d-piatoss3612s-projects.vercel.app/)
 
 ```bash
 $ yarn dev
 ```
 
 - Open the browser and navigate to `http://localhost:3000` to access the application.
+
+### Demo Video
+
+- [Demo Application](https://zk-sync-native-aa-demo-6toua303d-piatoss3612s-projects.vercel.app/)
 
 [![General-Paymaster-Demo](https://img.youtube.com/vi/Ht7gay-9IAI/0.jpg)](https://www.youtube.com/watch?v=Ht7gay-9IAI)
 
@@ -1920,8 +2052,13 @@ $ yarn dev
 - Implement the contract account
 - Implement the registry contract for LibroLink membership management
 
+### Advanced Topics
+
+- Gas usage limit and refund excess gas mechanism on the General Paymaster
+- Approval-based Paymaster with ERC20 tokens payment and price oracle integration
+
 ## References
 
-- [zkSync: Paymaster](https://docs.zksync.io/paymaster/paymaster)
-- [zkSync: NFT Gated Paymaster](https://docs.zksync.io/build/tutorials/dapp-development/gated-nft-paymaster-tutorial.html)
+- [Paymasters introduction](https://docs.zksync.io/build/quick-start/paymasters-introduction)
+- [Dapp with gated NFT paymaster](https://code.zksync.io/tutorials/dapp-nft-paymaster)
 - [Viem: estimateFee](https://viem.sh/zksync/actions/estimateFee)
