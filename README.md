@@ -2033,11 +2033,13 @@ $ yarn dev
 
 - Open the browser and navigate to `http://localhost:3000` to access the application.
 
-### Demo Video
-
-- [Demo Application](https://zk-sync-native-aa-demo-6toua303d-piatoss3612s-projects.vercel.app/)
+### Demo Video (Web)
 
 [![General-Paymaster-Demo](https://img.youtube.com/vi/Ht7gay-9IAI/0.jpg)](https://www.youtube.com/watch?v=Ht7gay-9IAI)
+
+### Demo Video (Mobile)
+
+[![General-Paymaster-Demo](https://img.youtube.com/vi/ONhPxFf8lcE/0.jpg)](https://www.youtube.com/watch?v=ONhPxFf8lcE)
 
 ## Conclusion
 
