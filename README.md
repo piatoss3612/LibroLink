@@ -3,7 +3,7 @@
 <h1>LibroLink</h1>
 <img src="./assets/LibroNFT.png" width="48%" alt="LibroLink Logo">
 <h3>Build Your Own Library: Read, Record, and Get Rewarded!</h3>
-<a href="https://zk-sync-native-aa-demo.vercel.app/">Live Demo</a>
+<a href="https://librolink.vercel.app/">Live Demo</a>
 <br>
 <br>
 <p>Test account for the demo</p>
