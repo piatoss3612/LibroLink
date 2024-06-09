@@ -152,7 +152,12 @@ const Main = () => {
   }
 
   return (
-    <Box display="flex" flexDirection="column" minHeight="100vh" bg="gray.300">
+    <Box
+      display="flex"
+      flexDirection="column"
+      minHeight="100vh"
+      bg="brand.ivory"
+    >
       <Center my="auto">
         <VStack
           spacing={4}

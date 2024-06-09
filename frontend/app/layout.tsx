@@ -5,8 +5,8 @@ import Providers from "./providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "zkSync AA Demo",
-  description: "zkSync AA Demo",
+  title: "LibroLink",
+  description: "Build Your Own Library: Read, Record, and Get Rewarded!",
 };
 
 export default function RootLayout({

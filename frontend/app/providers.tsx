@@ -2,11 +2,26 @@
 
 import { useEffect, useState } from "react";
 import { PrivyProvider } from "@privy-io/react-auth";
-import { ChakraProvider } from "@chakra-ui/react";
+import { ChakraProvider, extendTheme } from "@chakra-ui/react";
 import { zkSyncSepoliaTestnet } from "viem/zksync";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { ZkSyncClientProvider } from "@/context/ZkSyncClient";
 import { PaymasterProvider } from "@/context/Paymaster";
+
+// Custom theme
+const colors = {
+  brand: {
+    warmBeige: "#F5E6CC",
+    rustyBrown: "#D3A588",
+    sageGreen: "#B5C7A3",
+    mistyRose: "#F2C2B7",
+    ivory: "#FFF8E7",
+    paleGray: "#E8E8E8",
+    darkChocolate: "#5D4037",
+  },
+};
+
+const theme = extendTheme({ colors });
 
 const Providers = ({ children }: { children: React.ReactNode }) => {
   const queryClient = new QueryClient();
@@ -28,7 +43,7 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
         },
       }}
     >
-      <ChakraProvider>
+      <ChakraProvider theme={theme}>
         <ZkSyncClientProvider>
           <QueryClientProvider client={queryClient}>
             <PaymasterProvider>{mounted && children}</PaymasterProvider>
