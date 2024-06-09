@@ -7,6 +7,7 @@ import { zkSyncSepoliaTestnet } from "viem/zksync";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { ZkSyncClientProvider } from "@/context/ZkSyncClient";
 import { PaymasterProvider } from "@/context/Paymaster";
+import Layout from "@/components/layout";
 
 // Custom theme
 const colors = {
@@ -52,7 +53,9 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
       <ChakraProvider theme={theme}>
         <ZkSyncClientProvider>
           <QueryClientProvider client={queryClient}>
-            <PaymasterProvider>{mounted && children}</PaymasterProvider>
+            <PaymasterProvider>
+              <Layout>{mounted && children}</Layout>
+            </PaymasterProvider>
           </QueryClientProvider>
         </ZkSyncClientProvider>
       </ChakraProvider>

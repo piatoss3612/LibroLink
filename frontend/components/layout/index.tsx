@@ -4,12 +4,9 @@ import React from "react";
 import BottomNavBar from "./BottomNavbar";
 import Footer from "./Footer";
 
-interface LayoutProps {
-  children: React.ReactNode;
-  authenticated: boolean;
-}
+const Layout = ({ children }: { children: React.ReactNode }) => {
+  const { authenticated } = usePrivy();
 
-const Layout = ({ children, authenticated }: LayoutProps) => {
   return (
     <Box
       display="flex"

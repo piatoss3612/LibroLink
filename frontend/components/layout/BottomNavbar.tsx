@@ -38,6 +38,7 @@ const BottomNavBar = () => {
 
   return (
     <Grid
+      as="nav"
       templateColumns="repeat(4, 1fr)"
       pos="fixed"
       bottom={0}
