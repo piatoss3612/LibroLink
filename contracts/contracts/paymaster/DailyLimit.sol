@@ -22,22 +22,27 @@ abstract contract DailyLimit {
      * @notice Check the daily limit for a user.
      * @param _user The user address.
      * @return reset Whether the counter should be reset.
-     * @return reacehad Whether the limit was reached.
+     * @return reached Whether the limit was reached.
      * @return counter The current counter value.
      */
-    function checkDailyLimit(address _user) public view returns (bool reset, bool reacehad, uint128 counter) {
+    function checkDailyLimit(address _user) public view returns (bool reset, bool reached, uint128 counter) {
         uint256 current = block.timestamp;
-        uint128 today6am = uint128((current / 1 days) * 1 days + 6 hours); // today 6am UTC
+        uint128 yesterday6am = uint128(((current - 1 days) / 1 days) * 1 days + 6 hours); // yesterday 6am UTC
+        uint128 today6am = yesterday6am + 1 days; // today 6am UTC
 
         Tracker memory tracker = dailyLimitTracker[_user];
 
-        if (tracker.timestamp < today6am && current >= today6am) {
-            // If the last update was before today 6am and the current time is after today 6am,
+        if (
+            (tracker.timestamp < today6am && current >= today6am)
+                || (tracker.timestamp < yesterday6am && current < today6am)
+        ) {
+            // 1. If the last update was before today 6am and the current time is after today 6am,
+            // 2. Or if the last update was before yesterday 6am and the current time is before today 6am, (in case the time is after midnight but before 6am)
             // the counter should be reset whether the limit was reached or not.
             reset = true;
         } else if (tracker.counter >= dailyLimit) {
             // If the counter reached the limit, the user should not be able to perform any more operations.
-            reacehad = true;
+            reached = true;
         }
 
         // Return the current counter value.
