@@ -21,7 +21,13 @@ const colors = {
   },
 };
 
-const theme = extendTheme({ colors });
+const fonts = {
+  heading: "Baloo 2, cursive",
+  body: "Baloo 2, cursive",
+  button: "Baloo 2, cursive",
+};
+
+const theme = extendTheme({ colors, fonts });
 
 const Providers = ({ children }: { children: React.ReactNode }) => {
   const queryClient = new QueryClient();
