@@ -1,7 +1,9 @@
 <div align="center">
 
 <h1>LibroLink</h1>
-<img src="./assets/logo.jpg" width="36%" alt="LibroLink Logo">
+<img src="./assets/logo.jpg" width="36%" alt="LibroLink Logo"
+   style="border-radius: 24px;" 
+>
 <h3>Build Your Own Library: Read, Record, and Get Rewarded!</h3>
 <a href="https://librolink.vercel.app/">Live Demo</a>
 <br>

@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import SearchBar from "../common/SearchBar";
 import Layout from "../layout";
 import { usePrivy } from "@privy-io/react-auth";
 import Login from "./Login";
@@ -20,7 +19,14 @@ const Home = () => {
 
   return (
     <Layout authenticated={authenticated}>
-      <Button onClick={logout}>Logout</Button>
+      <Button
+        onClick={logout}
+        bg="brand.rustyBrown"
+        color="white"
+        _hover={{ bg: "brand.darkChocolate" }}
+      >
+        Logout
+      </Button>
     </Layout>
   );
 };
