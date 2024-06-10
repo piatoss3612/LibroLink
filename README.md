@@ -50,15 +50,15 @@ This project is a simple and intuitive platform where users can record their rea
 
 ### Problems and Solutions
 
-1. **Lack of Trust and Transparency**
-
-   - **Problem**: On centralized platforms, it is difficult to verify the authenticity of reading records and reviews. There is a risk of data manipulation or forgery.
-   - **Solution**: By utilizing blockchain technology, all reading records and reviews are transparently recorded and verified. Each record is stored on the blockchain via smart contracts, and all changes are logged to ensure trustworthiness.
-
-2. **Lack of User Motivation**
+1. **Lack of User Motivation**
 
    - **Problem**: Traditional book clubs often fail to motivate users to engage in reading activities or write reviews. Recently, users have increasingly preferred reading activities based on experiences through pop-up bookstores or SNS interactions, necessitating methods to encourage active interaction.
    - **Solution**: Implementing a mission system and reading challenge system allows users to engage in reading activities and feel a sense of accomplishment. Completing missions or participating in challenges rewards users with points or tokens, thereby increasing their motivation.
+
+2. **Lack of Trust and Transparency**
+
+   - **Problem**: On centralized platforms, it is difficult to verify the authenticity of reading records and reviews. There is a risk of data manipulation or forgery.
+   - **Solution**: By utilizing blockchain technology, all reading records and reviews are transparently recorded and verified. Each record is stored on the blockchain via smart contracts, and all changes are logged to ensure trustworthiness.
 
 3. **Data Ownership Issues**
    - **Problem**: On centralized platforms, the ownership of user-generated content (reading records, reviews, etc.) belongs to the platform. Users cannot fully control their data.

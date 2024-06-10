@@ -1,6 +1,6 @@
 "use client";
 
-import { Avatar, Box, Center, VStack, Text } from "@chakra-ui/react";
+import { Box, useDisclosure } from "@chakra-ui/react";
 import {
   IoPerson,
   IoKey,
@@ -16,15 +16,20 @@ import { useMfaEnrollment, usePrivy } from "@privy-io/react-auth";
 import Logo from "@/public/logo.jpg";
 import MenuGroup from "./MenuGroup";
 import UserAvatar from "./UserAvatar";
+import LogoutDialog from "./LogoutDialog";
+import { useRef } from "react";
 
 const Settings = () => {
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const { authenticated, logout, setWalletPassword, exportWallet } = usePrivy();
   const { showMfaEnrollmentModal } = useMfaEnrollment();
   const router = useRouter();
+  const cancelRef = useRef<HTMLButtonElement>(null);
 
-  const handleLogout = () => {
-    logout();
-    router.push("/");
+  const handleLogout = async () => {
+    await logout();
+    onClose();
+    router.push("/login");
   };
 
   const settingsOptions = [
@@ -44,7 +49,7 @@ const Settings = () => {
       label: "Export Wallet",
       onClick: exportWallet,
     },
-    { icon: IoLogOut, label: "Logout", onClick: handleLogout },
+    { icon: IoLogOut, label: "Logout", onClick: onOpen },
   ];
 
   const supportOptions = [
@@ -70,19 +75,31 @@ const Settings = () => {
   }
 
   return (
-    <Box
-      bg="brand.ivory"
-      color="brand.darkChocolate"
-      p={4}
-      m={4}
-      w={{ base: "100%", md: "300px" }}
-    >
-      <UserAvatar name="John Doe" src={Logo.src} />
-      <Box>
-        <MenuGroup heading="User Settings" menuItems={settingsOptions} mb={6} />
-        <MenuGroup heading="Support" menuItems={supportOptions} />
+    <>
+      <LogoutDialog
+        isOpen={isOpen}
+        onClose={onClose}
+        handleLogout={handleLogout}
+        cancelRef={cancelRef}
+      />
+      <Box
+        bg="brand.ivory"
+        color="brand.darkChocolate"
+        p={4}
+        m={4}
+        w={{ base: "100%", md: "300px" }}
+      >
+        <UserAvatar name="John Doe" src={Logo.src} />
+        <Box>
+          <MenuGroup
+            heading="User Settings"
+            menuItems={settingsOptions}
+            mb={6}
+          />
+          <MenuGroup heading="Support" menuItems={supportOptions} />
+        </Box>
       </Box>
-    </Box>
+    </>
   );
 };
 

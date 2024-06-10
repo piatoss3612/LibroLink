@@ -1,15 +1,16 @@
 "use client";
 
 import React from "react";
-import { usePrivy } from "@privy-io/react-auth";
-import Login from "./Login";
 import Dashboard from "./Dashboard";
+import { usePrivy } from "@privy-io/react-auth";
+import { useRouter } from "next/navigation";
 
 const Home = () => {
-  const { authenticated, login, logout } = usePrivy();
+  const { authenticated } = usePrivy();
+  const router = useRouter();
 
   if (!authenticated) {
-    return <Login login={login} />;
+    router.push("/login");
   }
 
   return <Dashboard />;
