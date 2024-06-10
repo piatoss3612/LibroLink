@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Grid, GridItem, Icon, Text, Box } from "@chakra-ui/react";
 import { usePathname, useRouter } from "next/navigation";
-import { IoHome, IoLibrary, IoCash, IoSettings } from "react-icons/io5";
+import { IoHome, IoPaw, IoLibrary, IoCash, IoSettings } from "react-icons/io5";
 
 interface BottomNavBarProps {
   setNavBarHeight: (height: number) => void;
@@ -17,6 +17,7 @@ const BottomNavBar = ({ setNavBarHeight }: BottomNavBarProps) => {
   // Navigation items
   const navItems = [
     { name: "home", label: "Home", path: "/", icon: IoHome },
+    { name: "buddy", label: "Buddy", path: "/buddies", icon: IoPaw },
     { name: "library", label: "Library", path: "/library", icon: IoLibrary },
     {
       name: "challenge",
@@ -52,7 +53,7 @@ const BottomNavBar = ({ setNavBarHeight }: BottomNavBarProps) => {
     <Grid
       as="nav"
       ref={navRef}
-      templateColumns="repeat(4, 1fr)"
+      templateColumns={`repeat(${navItems.length}, 1fr)`}
       pos="fixed"
       bottom={0}
       left={0}
