@@ -1,9 +1,7 @@
 <div align="center">
 
 <h1>LibroLink</h1>
-<img src="./assets/logo.jpg" width="36%" alt="LibroLink Logo"
-   style="border-radius: 24px;" 
->
+<img src="./assets/logo.jpg" width="36%" alt="LibroLink Logo">
 <h3>Build Your Own Library: Read, Record, and Get Rewarded!</h3>
 <a href="https://librolink.vercel.app/">Live Demo</a>
 <br>
@@ -73,20 +71,26 @@ This project is a simple and intuitive platform where users can record their rea
    - **Record View**: An interface that allows users to easily view their reading records
    - **Benefits**: Users can visually track their reading history and monitor their reading progress. Additionally, they can share and communicate their reading activities with others, promoting interaction and making reading more enjoyable.
 
-2. **Reading Challenge System and Badge Awarding**
+2. **Buddy System**
 
-   - **Description**: A system where users can participate in various reading challenges and earn badges and rewards upon completion.
+<div style="display: flex;">
+<img src="./assets/buddy1-removebg.png" alt="Buddy1" width="200">
+<img src="./assets/buddy2-removebg.png" alt="Buddy2" width="200">
+<img src="./assets/buddy3-removebg.png" alt="Buddy3" width="200">
+</div>
+
+- **Description**: A system where users can manage their own avatar as dynamic NFTs and interact with other users.
+- **Avatar Customization**: Users can customize their avatars with various items and accessories (e.g., glasses, hats, etc.)
+- **Interaction**: Users can visit other users' profiles and leave comments or likes
+- **Benefits**: Users can express their personalities through avatars and interact with others. This feature enhances user engagement and fosters a sense of community.
+
+3. **Reading Challenge System integrated with Buddy System**
+
+   - **Description**: A system where users can participate in various reading challenges and earn items of their avatars or tokens as rewards.
    - **Challenge Participation**: Read a given book within a certain period or read books on specific topics
-   - **Badge Awarding**: Badges are awarded upon completing challenges and displayed on user profiles
-   - **Reward System**: Points or tokens are awarded for completing challenges
-   - **Benefits**: Users feel a sense of challenge and accomplishment, motivating them to read more. Additionally, competing or collaborating with other users makes reading activities more dynamic.
-
-3. **Mission System**
-   - **Description**: A system where users can complete daily, weekly, and monthly reading missions to earn rewards.
-   - **Daily Mission**: Example) Read 20 pages today
-   - **Weekly Mission**: Example) Finish one book this weekend
-   - **Monthly Mission**: Example) Complete this month's reading list
-   - **Benefits**: Helps users maintain a consistent reading habit and provides a sense of accomplishment.
+   - **Buddy System Integration**: Users can get items for their avatars as rewards for completing challenges
+   - **Reward System**: Users can earn points or tokens by completing challenges
+   - **Benefits**: Users feel a sense of challenge and accomplishment, motivating them to read more. Additionally, users can earn rewards and items for customizing their avatars, enhancing user engagement.
 
 ### Target Users
 
@@ -96,7 +100,7 @@ This project is a simple and intuitive platform where users can record their rea
 
 ### Future Roadmap
 
-- **Short-term Goals**: Complete the mission system, personal reading record system, reading challenge system, and badge awarding features
+- **Short-term Goals**: Complete the buddy system, personal reading record system, reading challenge system, and reward system
 - **Mid-term Goals**: Incorporate user feedback and improve UI/UX
 - **Long-term Goals**: Add virtual events and workshops, integrate VR/AR technology
 
