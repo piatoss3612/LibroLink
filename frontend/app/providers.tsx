@@ -28,7 +28,21 @@ const fonts = {
   button: "Baloo 2, cursive",
 };
 
-const theme = extendTheme({ colors, fonts });
+const styles = {
+  global: {
+    "html, body": {
+      overflowY: "auto",
+      "::-webkit-scrollbar": {
+        width: "0px",
+      },
+      "::-webkit-scrollbar-thumb": {
+        background: "transparent",
+      },
+    },
+  },
+};
+
+const theme = extendTheme({ colors, fonts, styles });
 
 const Providers = ({ children }: { children: React.ReactNode }) => {
   const queryClient = new QueryClient();
