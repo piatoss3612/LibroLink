@@ -1,12 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Grid, GridItem, Icon, Text, Box } from "@chakra-ui/react";
 import { usePathname, useRouter } from "next/navigation";
 import { IoHome, IoLibrary, IoCash, IoSettings } from "react-icons/io5";
 
-const BottomNavBar = () => {
+interface BottomNavBarProps {
+  setNavBarHeight: (height: number) => void;
+}
+
+const BottomNavBar = ({ setNavBarHeight }: BottomNavBarProps) => {
   const router = useRouter();
   const pathname = usePathname();
   const [activePage, setActivePage] = useState("");
+
+  const navRef = useRef<HTMLDivElement | null>(null);
 
   // Navigation items
   const navItems = [
@@ -36,9 +42,16 @@ const BottomNavBar = () => {
     setActivePage(trimmedPath === "/" ? "/" : `/${trimmedPath}`); // Set the active page
   }, [pathname]);
 
+  useEffect(() => {
+    if (navRef.current) {
+      setNavBarHeight(navRef.current.clientHeight);
+    }
+  }, [navRef, setNavBarHeight]);
+
   return (
     <Grid
       as="nav"
+      ref={navRef}
       templateColumns="repeat(4, 1fr)"
       pos="fixed"
       bottom={0}
@@ -58,8 +71,8 @@ const BottomNavBar = () => {
           justifyContent="center"
           onClick={() => handleNavigation(item.path)}
           cursor="pointer"
-          _hover={{ bg: "brand.darkChocolate" }}
-          bg={activePage === item.path ? "brand.darkChocolate" : "transparent"}
+          _hover={{ color: "brand.darkChocolate" }}
+          color={activePage === item.path ? "brand.darkChocolate" : "white"}
           borderRadius="md"
           p={2}
         >
@@ -68,10 +81,12 @@ const BottomNavBar = () => {
               as={item.icon}
               w={activePage === item.name ? 4 : 6}
               h={activePage === item.name ? 4 : 6}
-              mb={1}
+              mb={activePage === item.name ? 1 : 0}
             />
             {activePage === item.path && (
-              <Text fontSize="sm">{item.label}</Text>
+              <Text fontSize="sm" fontWeight="bold">
+                {item.label}
+              </Text>
             )}
           </Box>
         </GridItem>

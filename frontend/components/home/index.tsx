@@ -3,7 +3,7 @@
 import React from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import Login from "./Login";
-import { Button } from "@chakra-ui/react";
+import Dashboard from "./Dashboard";
 
 const Home = () => {
   const { authenticated, login, logout } = usePrivy();
@@ -12,16 +12,7 @@ const Home = () => {
     return <Login login={login} />;
   }
 
-  return (
-    <Button
-      onClick={logout}
-      bg="brand.rustyBrown"
-      color="white"
-      _hover={{ bg: "brand.darkChocolate" }}
-    >
-      Logout
-    </Button>
-  );
+  return <Dashboard />;
 };
 
 export default Home;
