@@ -1,5 +1,3 @@
-"use client";
-
 import usePaymaster from "@/hooks/usePaymaster";
 import useZkSyncClient from "@/hooks/useZkSyncClient";
 import { COUNTER_ABI, COUNTER_ADDRESS } from "@/libs/Counter";
@@ -7,19 +5,12 @@ import { LIBRO_NFT_ABI, LIBRO_NFT_ADDRESS } from "@/libs/LibroNFT";
 import { Box, Button, Center, Heading, Text, VStack } from "@chakra-ui/react";
 import { usePrivy } from "@privy-io/react-auth";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
 import { encodeFunctionData, formatEther } from "viem";
 import { zkSyncSepoliaTestnet } from "viem/chains";
 
-const Main = () => {
-  const { ready, authenticated, login, logout } = usePrivy();
+const Dashboard = () => {
   const { wallet, publicClient, zkSyncClient } = useZkSyncClient();
   const { openPaymasterModal } = usePaymaster();
-
-  // ====== Transaction status ======
-
-  const [txStatus, setTxStatus] = useState<string>("");
-  const [txHash, setTxHash] = useState<string>("");
 
   // ====== ETH balance ======
 
@@ -88,8 +79,11 @@ const Main = () => {
 
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
 
-      setTxHash(hash);
-      setTxStatus(receipt.status);
+      if (receipt.status === "success") {
+        console.log("NFT minted successfully");
+      } else {
+        console.error("NFT mint failed");
+      }
     } catch (error) {
       console.error(error);
     }
@@ -134,61 +128,42 @@ const Main = () => {
     });
   };
 
-  if (!authenticated) {
-    return (
-      <Box
-        display="flex"
-        flexDirection="column"
-        minHeight="100vh"
-        bg="gray.300"
-      >
-        <Center my="auto">
-          <Button onClick={login} isLoading={!ready}>
-            Login
-          </Button>
-        </Center>
-      </Box>
-    );
-  }
-
   return (
-    <Box display="flex" flexDirection="column" minHeight="100vh" bg="gray.300">
+    <Box display="flex" flexDirection="column">
       <Center my="auto">
-        <VStack
-          spacing={4}
-          direction="column"
-          alignItems="center"
-          justifyContent="center"
-        >
-          <Button onClick={logout} isLoading={!ready}>
-            Logout
-          </Button>
-          {wallet && (
-            <VStack spacing={4}>
-              <Text>Address: {wallet.address}</Text>
-              <Text>Balance: {ethBalanceValue} ETH</Text>
-              <VStack spacing={4} border="1px" borderRadius={"md"} p={8} m={4}>
-                <Heading>Libro NFT</Heading>
-                <Text>Token Balance: {tokenBalanceValue}</Text>
-                <Button onClick={mintLibroNFT}>Mint Libro NFT</Button>
-                {txHash && (
-                  <VStack>
-                    <Text>Transaction Hash: {txHash}</Text>
-                    <Text>Transaction Status: {txStatus}</Text>
-                  </VStack>
-                )}
-              </VStack>
-              <VStack spacing={4} border="1px" borderRadius={"md"} p={8} m={4}>
-                <Heading>Counter</Heading>
-                <Text>Counter Value: {counterValue?.toString()}</Text>
-                <Button onClick={incrementCounter}>Increment Counter</Button>
-              </VStack>
+        {wallet && (
+          <VStack spacing={4}>
+            <Text>Address: {wallet.address}</Text>
+            <Text>Balance: {ethBalanceValue} ETH</Text>
+            <VStack spacing={4} border="1px" borderRadius={"md"} p={8} m={4}>
+              <Heading>Libro NFT</Heading>
+              <Text>Token Balance: {tokenBalanceValue}</Text>
+              <Button
+                onClick={mintLibroNFT}
+                bg="brand.rustyBrown"
+                color="white"
+                _hover={{ bg: "brand.darkChocolate" }}
+              >
+                Mint Libro NFT
+              </Button>
             </VStack>
-          )}
-        </VStack>
+            <VStack spacing={4} border="1px" borderRadius={"md"} p={8} m={4}>
+              <Heading>Counter</Heading>
+              <Text>Counter Value: {counterValue?.toString()}</Text>
+              <Button
+                onClick={incrementCounter}
+                bg="brand.rustyBrown"
+                color="white"
+                _hover={{ bg: "brand.darkChocolate" }}
+              >
+                Increment Counter
+              </Button>
+            </VStack>
+          </VStack>
+        )}
       </Center>
     </Box>
   );
 };
 
-export default Main;
+export default Dashboard;
