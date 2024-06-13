@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.24;
 
 import {
     IAccount,
@@ -21,30 +21,28 @@ import {
 import {SystemContractHelper} from "@matterlabs/zksync-contracts/l2/system-contracts/libraries/SystemContractHelper.sol";
 import {INonceHolder} from "@matterlabs/zksync-contracts/l2/system-contracts/interfaces/INonceHolder.sol";
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
+import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract Account is IAccount, IERC1271 {
+contract LibroAccount is IAccount, IERC1271, IERC721Receiver, IERC1155Receiver, Ownable {
+    error LibroAccount__OnlyBootloader();
+    error LibroAccount__InvalidSignature();
+    error LibroAccount__NotEnoughBalance();
+
     // to get transaction hash
     using TransactionHelper for Transaction;
 
     bytes4 constant EIP1271_SUCCESS_RETURN_VALUE = 0x1626ba7e;
 
-    address public owner;
-
     modifier onlyBootloader() {
-        require(msg.sender == BOOTLOADER_FORMAL_ADDRESS, "Only bootloader can call this function");
+        if (msg.sender != BOOTLOADER_FORMAL_ADDRESS) revert LibroAccount__OnlyBootloader();
         // Continue execution if called from the bootloader.
         _;
     }
 
-    modifier onlyOwner() {
-        require(_isOwner(msg.sender), "Only owner can call this function");
-        // Continue execution if called from the owner.
-        _;
-    }
-
-    constructor(address _owner) {
-        owner = _owner;
-    }
+    constructor(address _owner) Ownable(_owner) {}
 
     function validateTransaction(bytes32, bytes32 _suggestedSignedHash, Transaction calldata _transaction)
         external
@@ -79,48 +77,12 @@ contract Account is IAccount, IERC1271 {
         // transaction that wouldn't be included on Ethereum.
         uint256 totalRequiredBalance = _transaction.totalRequiredBalance();
         if (totalRequiredBalance > address(this).balance) {
-            revert("Not enough balance");
+            revert LibroAccount__NotEnoughBalance();
         }
 
         if (_isValidSignature(txHash, _transaction.signature)) {
             magic = ACCOUNT_VALIDATION_SUCCESS_MAGIC;
         }
-    }
-
-    function executeTransaction(bytes32, bytes32, Transaction calldata _transaction)
-        external
-        payable
-        override
-        onlyBootloader
-    {
-        _executeTransaction(_transaction);
-    }
-
-    function _executeTransaction(Transaction calldata _transaction) internal {
-        address to = address(uint160(_transaction.to));
-        uint128 value = Utils.safeCastToU128(_transaction.value);
-        bytes calldata data = _transaction.data;
-
-        if (to == address(DEPLOYER_SYSTEM_CONTRACT)) {
-            uint32 gas = Utils.safeCastToU32(gasleft());
-
-            // Note, that the deployer contract can only be called
-            // with a "systemCall" flag.
-            SystemContractsCaller.systemCallWithPropagatedRevert(gas, to, value, data);
-        } else {
-            (bool success, bytes memory returnData) = to.call{value: value}(data);
-            if (!success) {
-                // If the call failed, we revert the transaction.
-                revert(string(returnData));
-            }
-        }
-    }
-
-    function executeTransactionFromOutside(Transaction calldata _transaction) external payable onlyOwner {
-        bytes4 magic = _validateTransaction(bytes32(0), _transaction);
-        require(magic == ACCOUNT_VALIDATION_SUCCESS_MAGIC, "NOT VALIDATED");
-
-        _executeTransaction(_transaction);
     }
 
     function isValidSignature(bytes32 _hash, bytes memory _signature) public view override returns (bytes4 magic) {
@@ -167,7 +129,45 @@ contract Account is IAccount, IERC1271 {
 
         address recoveredAddress = ecrecover(_hash, v, r, s);
 
-        return _isOwner(recoveredAddress) && recoveredAddress != address(0);
+        return (owner() == recoveredAddress) && recoveredAddress != address(0);
+    }
+
+    function executeTransaction(bytes32, bytes32, Transaction calldata _transaction)
+        external
+        payable
+        override
+        onlyBootloader
+    {
+        _executeTransaction(_transaction);
+    }
+
+    function executeTransactionFromOutside(Transaction calldata _transaction) external payable {
+        bytes4 magic = _validateTransaction(bytes32(0), _transaction);
+        // Should revert if the transaction is not validated when called from outside
+        if (magic != ACCOUNT_VALIDATION_SUCCESS_MAGIC) {
+            revert LibroAccount__InvalidSignature();
+        }
+        _executeTransaction(_transaction);
+    }
+
+    function _executeTransaction(Transaction calldata _transaction) internal {
+        address to = address(uint160(_transaction.to));
+        uint128 value = Utils.safeCastToU128(_transaction.value);
+        bytes calldata data = _transaction.data;
+
+        if (to == address(DEPLOYER_SYSTEM_CONTRACT)) {
+            uint32 gas = Utils.safeCastToU32(gasleft());
+
+            // Note, that the deployer contract can only be called
+            // with a "systemCall" flag.
+            SystemContractsCaller.systemCallWithPropagatedRevert(gas, to, value, data);
+        } else {
+            (bool success, bytes memory returnData) = to.call{value: value}(data);
+            if (!success) {
+                // If the call failed, we revert the transaction.
+                revert(string(returnData));
+            }
+        }
     }
 
     function payForTransaction(bytes32, bytes32, Transaction calldata _transaction)
@@ -177,7 +177,9 @@ contract Account is IAccount, IERC1271 {
         onlyBootloader
     {
         bool success = _transaction.payToTheBootloader();
-        require(success, "Failed to pay the fee to the operator");
+        if (!success) {
+            revert LibroAccount__NotEnoughBalance();
+        }
     }
 
     function prepareForPaymaster(
@@ -185,83 +187,42 @@ contract Account is IAccount, IERC1271 {
         bytes32, // _suggestedSignedHash
         Transaction calldata _transaction
     ) external payable override onlyBootloader {
-        // TO BE IMPLEMENTED
+        _transaction.processPaymasterInput();
     }
 
-    // This function verifies that the ECDSA signature is both in correct format and non-malleable
-    function checkValidECDSASignatureFormat(bytes memory _signature) internal pure returns (bool) {
-        if (_signature.length != 65) {
-            return false;
-        }
-
-        uint8 v;
-        bytes32 r;
-        bytes32 s;
-        // Signature loading code
-        // we jump 32 (0x20) as the first slot of bytes contains the length
-        // we jump 65 (0x41) per signature
-        // for v we load 32 bytes ending with v (the first 31 come from s) then apply a mask
-        assembly {
-            r := mload(add(_signature, 0x20))
-            s := mload(add(_signature, 0x40))
-            v := and(mload(add(_signature, 0x41)), 0xff)
-        }
-        if (v != 27 && v != 28) {
-            return false;
-        }
-
-        // EIP-2 still allows signature malleability for ecrecover(). Remove this possibility and make the signature
-        // unique. Appendix F in the Ethereum Yellow paper (https://ethereum.github.io/yellowpaper/paper.pdf), defines
-        // the valid range for s in (301): 0 < s < secp256k1n ÷ 2 + 1, and for v in (302): v ∈ {27, 28}. Most
-        // signatures from current libraries generate a unique signature with an s-value in the lower half order.
-        //
-        // If your library generates malleable signatures, such as s-values in the upper range, calculate a new s-value
-        // with 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141 - s1 and flip v from 27 to 28 or
-        // vice versa. If your library also generates signatures with 0/1 for v instead 27/28, add 27 to v to accept
-        // these malleable signatures as well.
-        if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {
-            return false;
-        }
-
-        return true;
+    function onERC721Received(
+        address, // operator
+        address, // from
+        uint256, // tokenId
+        bytes calldata // data
+    ) external pure override returns (bytes4) {
+        return IERC721Receiver.onERC721Received.selector;
     }
 
-    function extractECDSASignature(bytes memory _fullSignature)
-        internal
-        pure
-        returns (bytes memory signature1, bytes memory signature2)
-    {
-        require(_fullSignature.length == 130, "Invalid length");
-
-        signature1 = new bytes(65);
-        signature2 = new bytes(65);
-
-        // Copying the first signature. Note, that we need an offset of 0x20
-        // since it is where the length of the `_fullSignature` is stored
-        assembly {
-            let r := mload(add(_fullSignature, 0x20))
-            let s := mload(add(_fullSignature, 0x40))
-            let v := and(mload(add(_fullSignature, 0x41)), 0xff)
-
-            mstore(add(signature1, 0x20), r)
-            mstore(add(signature1, 0x40), s)
-            mstore8(add(signature1, 0x60), v)
-        }
-
-        // Copying the second signature.
-        assembly {
-            let r := mload(add(_fullSignature, 0x61))
-            let s := mload(add(_fullSignature, 0x81))
-            let v := and(mload(add(_fullSignature, 0x82)), 0xff)
-
-            mstore(add(signature2, 0x20), r)
-            mstore(add(signature2, 0x40), s)
-            mstore8(add(signature2, 0x60), v)
-        }
+    function onERC1155Received(
+        address, // operator
+        address, // from
+        uint256, // id
+        uint256, // value
+        bytes calldata // data
+    ) external pure override returns (bytes4) {
+        return IERC1155Receiver.onERC1155Received.selector;
     }
 
-    function _isOwner(address account) internal view returns (bool) {
-        return account == owner;
+    function onERC1155BatchReceived(
+        address, // operator
+        address, // from
+        uint256[] calldata, // ids
+        uint256[] calldata, // values
+        bytes calldata // data
+    ) external pure override returns (bytes4) {
+        return IERC1155Receiver.onERC1155BatchReceived.selector;
+    }
+
+    function supportsInterface(bytes4 interfaceId) public pure override returns (bool) {
+        return interfaceId == type(IAccount).interfaceId || interfaceId == type(IERC1271).interfaceId
+            || interfaceId == type(IERC721Receiver).interfaceId || interfaceId == type(IERC1155Receiver).interfaceId
+            || interfaceId == type(IERC165).interfaceId;
     }
 
     fallback() external {
