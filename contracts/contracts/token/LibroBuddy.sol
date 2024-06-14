@@ -9,13 +9,13 @@ import {IERC6454} from "./interfaces/IERC6454.sol";
  * @title LibroNFT
  * @dev Basic ERC721 token.
  */
-contract LibroNFT is ERC721, IERC6454 {
+contract LibroBuddy is ERC721, IERC6454 {
     error LibroNFT__Soulbound();
 
     uint256 private _tokenId;
     string private _tokenURI;
 
-    constructor(string memory uri) ERC721("LibroNFT", "LIBRO") {
+    constructor(string memory uri) ERC721("LibroBuddy", "LB") {
         _tokenURI = uri;
     }
 
