@@ -27,9 +27,9 @@ contract LibroBuddyParts is ILibroBuddyParts, ERC1155, Ownable {
 
     constructor(LibroBuddyInitParams memory params) ERC1155(params.defaultUri) Ownable(msg.sender) {
         _part = LibroBuddyUtils.LibroBuddyPart(params.partId);
-        _partData = LibroBuddyUtils.LibroBuddyPartData(params.x, params.y, params.width, params.height);
+        _partData = params.data;
 
-        emit LibroBuddyPartsInitialized(_part, params.x, params.y, params.width, params.height);
+        emit LibroBuddyPartsInitialized(_part, _partData.x, _partData.y, _partData.width, _partData.height);
 
         _setGateway(params.gateway);
     }

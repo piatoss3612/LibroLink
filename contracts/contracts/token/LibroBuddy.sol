@@ -1,45 +1,157 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import {ILibroBuddy, IERC6454, IERC4883} from "./interfaces/ILibroBuddy.sol";
+import {ILibroBuddyParts} from "./interfaces/ILibroBuddyParts.sol";
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import {IERC6454} from "./interfaces/IERC6454.sol";
+import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
+import {LibroBuddyUtils} from "./lib/LibroBuddyUtils.sol";
 
 /**
  * @title LibroNFT
  * @dev Basic ERC721 token.
  */
-contract LibroBuddy is ERC721, IERC6454 {
-    error LibroNFT__Soulbound();
+contract LibroBuddy is ILibroBuddy, ERC721, AccessControl {
+    error LibroBuddy__Soulbound();
+    error LibroBuddy__OnlyOwnerOfToken(uint256 tokenId);
+    error LibroBuddy__InvalidPart();
+    error LibroBuddy__NotOwnedPart(ILibroBuddyParts part, uint256 partId);
+
+    bytes32 public constant BUDDY_MINER_ROLE = keccak256("BUDDY_MINER_ROLE");
+    bytes32 public constant PART_MINER_ROLE = keccak256("PART_MINER_ROLE");
 
     uint256 private _tokenId;
-    string private _tokenURI;
+    uint256 private _width;
+    uint256 private _height;
 
-    constructor(string memory uri) ERC721("LibroBuddy", "LB") {
-        _tokenURI = uri;
+    ILibroBuddyParts[] private _parts;
+    mapping(uint256 => mapping(ILibroBuddyParts => uint256)) private _partEquipped;
+
+    constructor(address admin) ERC721("LibroBuddy", "LB") {
+        _setRoleAdmin(BUDDY_MINER_ROLE, DEFAULT_ADMIN_ROLE);
+        _setRoleAdmin(PART_MINER_ROLE, DEFAULT_ADMIN_ROLE);
+        _grantRole(DEFAULT_ADMIN_ROLE, admin);
+
+        // TODO: create parts
     }
 
-    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+    function width() public view override returns (uint256) {
+        return _width;
+    }
+
+    function height() public view override returns (uint256) {
+        return _height;
+    }
+
+    function partEquipped(uint256 tokenId)
+        public
+        view
+        override
+        returns (ILibroBuddyParts[] memory parts, uint256[] memory partIds)
+    {
         _requireOwned(tokenId);
 
-        return _tokenURI;
-    }
+        parts = _parts;
+        partIds = new uint256[](parts.length);
 
-    /**
-     * @dev Mints a new token to the sender.
-     */
-    function mint() external {
-        uint256 tokenId = _tokenId++;
-        _safeMint(msg.sender, tokenId);
+        for (uint256 i = 0; i < parts.length; i++) {
+            partIds[i] = _partEquipped[tokenId][parts[i]];
+        }
     }
 
     /**
      * @dev Mints a new token to the given address.
      * @param to address to mint the token to.
      */
-    function mint(address to) external {
+    function mintBuddy(address to) external onlyRole(BUDDY_MINER_ROLE) {
         uint256 tokenId = _tokenId++;
         _safeMint(to, tokenId);
+    }
+
+    function createPart(LibroBuddyUtils.LibroBuddyPart partType, string memory data, bool isSvg)
+        external
+        onlyRole(PART_MINER_ROLE)
+    {
+        ILibroBuddyParts part = _requirePartExists(partType);
+        part.create(data, isSvg);
+    }
+
+    function mintParts(LibroBuddyUtils.LibroBuddyPart partType, address to, uint256 partId)
+        external
+        onlyRole(PART_MINER_ROLE)
+    {
+        ILibroBuddyParts part = _requirePartExists(partType);
+        part.mint(to, partId);
+    }
+
+    function mintPartsToBatch(LibroBuddyUtils.LibroBuddyPart partType, address[] memory to, uint256 partId)
+        external
+        onlyRole(PART_MINER_ROLE)
+    {
+        ILibroBuddyParts part = _requirePartExists(partType);
+        part.mintToBatch(to, partId);
+    }
+
+    function _requirePartExists(LibroBuddyUtils.LibroBuddyPart partType)
+        internal
+        view
+        returns (ILibroBuddyParts part)
+    {
+        for (uint256 i = 0; i < _parts.length; i++) {
+            if (_parts[i].part() == partType) {
+                part = _parts[i];
+            }
+        }
+
+        if (address(part) == address(0x0)) {
+            revert LibroBuddy__InvalidPart();
+        }
+    }
+
+    function setPart(uint256 tokenId, LibroBuddyUtils.LibroBuddyPart part, uint256 partId) external override {
+        address owner = _requireOwned(tokenId);
+        if (owner != _msgSender()) {
+            revert LibroBuddy__OnlyOwnerOfToken(tokenId);
+        }
+
+        ILibroBuddyParts partContract = _requirePartExists(part);
+
+        if (partContract.balanceOf(owner, partId) == 0) {
+            revert LibroBuddy__NotOwnedPart(partContract, partId);
+        }
+
+        _partEquipped[tokenId][partContract] = partId;
+
+        emit LibroBuddyPartSet(tokenId, part, partId);
+    }
+
+    function setParts(uint256 tokenId, LibroBuddyUtils.LibroBuddyPart[] memory parts, uint256[] memory partIds)
+        external
+        override
+    {
+        address owner = _requireOwned(tokenId);
+        if (owner != _msgSender()) {
+            revert LibroBuddy__OnlyOwnerOfToken(tokenId);
+        }
+
+        if (parts.length != partIds.length) {
+            revert LibroBuddy__InvalidPart();
+        }
+
+        for (uint256 i = 0; i < parts.length; i++) {
+            ILibroBuddyParts part = _parts[i];
+
+            if (part.balanceOf(owner, partIds[i]) == 0) {
+                revert LibroBuddy__NotOwnedPart(part, partIds[i]);
+            }
+
+            _partEquipped[tokenId][part] = partIds[i];
+
+            emit LibroBuddyPartSet(tokenId, parts[i], partIds[i]);
+        }
     }
 
     /**
@@ -48,6 +160,65 @@ contract LibroBuddy is ERC721, IERC6454 {
     function burn(uint256 tokenId) external {
         _requireOwned(tokenId);
         _burn(tokenId);
+    }
+
+    function tokenURI(uint256 tokenId) public view override returns (string memory uri) {
+        string memory name = string(abi.encodePacked("LibroBuddy #", Strings.toString(tokenId)));
+        string memory description = "LibroBuddy is a collection of LibroLink NFTs. Let's build a book club together!";
+        string memory image = Base64.encode(bytes(_generateSVG(tokenId)));
+
+        uri = string(
+            abi.encodePacked(
+                "data:application/json;base64,",
+                Base64.encode(
+                    bytes(
+                        abi.encodePacked(
+                            '{"name":"',
+                            name,
+                            '","description":"',
+                            description,
+                            '","image":"data:image/svg+xml;base64,',
+                            image,
+                            '"}'
+                        )
+                    )
+                )
+            )
+        );
+    }
+
+    function _generateSVG(uint256 tokenId) internal view returns (string memory svg) {
+        string memory render = renderTokenById(tokenId);
+        svg = string(
+            abi.encodePacked(
+                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ',
+                Strings.toString(_width),
+                " ",
+                Strings.toString(_height),
+                '">',
+                render,
+                "</svg>"
+            )
+        );
+    }
+
+    function renderTokenById(uint256 id) public view returns (string memory render) {
+        address owner = _requireOwned(id);
+
+        ILibroBuddyParts[] memory parts = _parts;
+
+        render = '<g id="libro-buddy">';
+
+        for (uint256 i = 0; i < parts.length;) {
+            ILibroBuddyParts part = parts[i];
+            uint256 equipped = _partEquipped[id][part];
+
+            if (part.balanceOf(owner, equipped) > 0) {
+                render = string(abi.encodePacked(render, part.renderTokenById(equipped)));
+            }
+        }
+
+        render = string(abi.encodePacked(render, "</g>"));
     }
 
     /**
@@ -91,13 +262,20 @@ contract LibroBuddy is ERC721, IERC6454 {
         }
 
         // Revert by default.
-        revert LibroNFT__Soulbound();
+        revert LibroBuddy__Soulbound();
     }
 
     /**
-     * @dev Overriding IERC-165 supportsInterface function to add ERC-6454 support.
+     * @dev Overriding IERC-165 supportsInterface function to add support for ILibroBuddy and IERC6454 interfaces.
      */
-    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return interfaceId == type(IERC6454).interfaceId || super.supportsInterface(interfaceId);
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(ERC721, AccessControl, IERC165)
+        returns (bool)
+    {
+        return interfaceId == type(ILibroBuddy).interfaceId || interfaceId == type(IERC6454).interfaceId
+            || interfaceId == type(IERC4883).interfaceId || super.supportsInterface(interfaceId);
     }
 }

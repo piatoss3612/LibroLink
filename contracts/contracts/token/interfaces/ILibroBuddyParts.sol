@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import {IERC4883} from "./IERC4883.sol";
 import {LibroBuddyUtils} from "../lib/LibroBuddyUtils.sol";
 
-interface ILibroBuddyParts is IERC4883 {
+interface ILibroBuddyParts is IERC4883, IERC1155 {
     error LibroBuddyParts__TokenNotExists(uint256 tokenId);
 
     event LibroBuddyPartsInitialized(
@@ -18,10 +19,7 @@ interface ILibroBuddyParts is IERC4883 {
 
     struct LibroBuddyInitParams {
         uint8 partId;
-        uint256 x;
-        uint256 y;
-        uint256 width;
-        uint256 height;
+        LibroBuddyUtils.LibroBuddyPartData data;
         string defaultUri;
         string gateway;
     }
