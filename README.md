@@ -66,10 +66,10 @@ This project is a simple and intuitive platform where users can record their rea
 
 1. **Reading Record System**
 
-   - **Description**: A system where users can store and manage the books they've read and their reading records. Users can invite others to join and share their reading activities.
+   - **Description**: A system where users can store and manage the books they've read and their reading records. Once a user finishes reading a book, they can visualize their reading history with generative AI art and record it as a ERC721 NFT.
    - **Record Fields**: Book title, author, reading date, review, etc.
    - **Record View**: An interface that allows users to easily view their reading records
-   - **Benefits**: Users can visually track their reading history and monitor their reading progress. Additionally, they can share and communicate their reading activities with others, promoting interaction and making reading more enjoyable.
+   - **Benefits**: Users can track their reading progress and history, motivating them to read more. The generative AI art adds a fun and creative element to the reading experience.
 
 2. **Buddy System**
 
@@ -79,8 +79,8 @@ This project is a simple and intuitive platform where users can record their rea
 <img src="./assets/buddy3-removebg.png" alt="Buddy3" width="200">
 </div>
 
-- **Description**: A system where users can manage their own avatar as dynamic NFTs and interact with other users.
-- **Avatar Customization**: Users can customize their avatars with various items and accessories (e.g., glasses, hats, etc.)
+- **Description**: A system where users can manage their own avatar as dynamic NFTs and interact with other users. Each avatar is unique and can be customized with various buddies and ornaments.
+- **Avatar Customization**: Users can customize their avatars with different buddies and ornaments
 - **Interaction**: Users can visit other users' profiles and leave comments or likes
 - **Benefits**: Users can express their personalities through avatars and interact with others. This feature enhances user engagement and fosters a sense of community.
 
@@ -96,7 +96,7 @@ This project is a simple and intuitive platform where users can record their rea
 
 - **All Reading Enthusiasts**: Anyone who enjoys reading and wants a platform that makes reading activities more enjoyable, allowing them to communicate and compete with others. It is easy to use even without prior knowledge of blockchain technology.
 - **Users Interested in Blockchain Technology**: Users looking for a new reading experience leveraging blockchain technology. Blockchain enhances the trust and transparency of reading activities and guarantees users' data ownership.
-- **Users Who Prefer Community Activities**: Users who want a platform where they can communicate, compete, and collaborate with others. Reading activities increase user interaction and provide opportunities to meet new friends or reading partners.
+- **Users Who Prefer Gamified Experiences**: Users who enjoy gamified experiences and want to participate in reading challenges and missions. The platform provides a fun and engaging reading experience.
 
 ### Future Roadmap
 
