@@ -25,8 +25,9 @@ import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Recei
 import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Multicall} from "./Multicall.sol";
 
-contract LibroAccount is IAccount, IERC1271, IERC721Receiver, IERC1155Receiver, Ownable {
+contract LibroAccount is IAccount, IERC1271, IERC721Receiver, IERC1155Receiver, Ownable, Multicall {
     error LibroAccount__OnlyBootloader();
     error LibroAccount__InvalidSignature();
     error LibroAccount__NotEnoughBalance();
@@ -155,7 +156,13 @@ contract LibroAccount is IAccount, IERC1271, IERC721Receiver, IERC1155Receiver, 
         uint128 value = Utils.safeCastToU128(_transaction.value);
         bytes calldata data = _transaction.data;
 
-        if (to == address(DEPLOYER_SYSTEM_CONTRACT)) {
+        if (_isMulticall(to, data)) {
+            // skip heading 4 bytes of the selector and decode the rest
+            (address[] memory targets, bytes[] memory calldatas, uint256[] memory values) =
+                _decodeMulticallData(data[4:]);
+            // call all targets
+            _multicall(targets, calldatas, values);
+        } else if (to == address(DEPLOYER_SYSTEM_CONTRACT)) {
             uint32 gas = Utils.safeCastToU32(gasleft());
 
             // Note, that the deployer contract can only be called
