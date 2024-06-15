@@ -25,7 +25,10 @@ contract LibroBuddyParts is ILibroBuddyParts, ERC1155, Ownable {
     mapping(uint256 => string) public tokenData;
     mapping(uint256 => bool) public tokenIsSvg;
 
-    constructor(LibroBuddyInitParams memory params) ERC1155(params.defaultUri) Ownable(msg.sender) {
+    constructor(LibroBuddyUtils.LibroBuddyPartInitParams memory params)
+        ERC1155(params.defaultUri)
+        Ownable(msg.sender)
+    {
         _part = LibroBuddyUtils.LibroBuddyPart(params.partId);
         _partData = params.data;
 

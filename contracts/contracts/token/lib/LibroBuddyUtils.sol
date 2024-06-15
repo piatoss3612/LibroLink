@@ -7,7 +7,6 @@ library LibroBuddyUtils {
     enum LibroBuddyPart {
         BUDDY,
         BACKGROUND,
-        HEADGEAR,
         LEFT_ORNAMENT,
         RIGHT_ORNAMENT
     }
@@ -19,13 +18,18 @@ library LibroBuddyUtils {
         uint256 height;
     }
 
+    struct LibroBuddyPartInitParams {
+        uint8 partId;
+        LibroBuddyPartData data;
+        string defaultUri;
+        string gateway;
+    }
+
     function partName(LibroBuddyPart _part) internal pure returns (string memory name) {
         if (_part == LibroBuddyPart.BUDDY) {
             name = "Buddy";
         } else if (_part == LibroBuddyPart.BACKGROUND) {
             name = "Background";
-        } else if (_part == LibroBuddyPart.HEADGEAR) {
-            name = "Headgear";
         } else if (_part == LibroBuddyPart.LEFT_ORNAMENT) {
             name = "Left Ornament";
         } else if (_part == LibroBuddyPart.RIGHT_ORNAMENT) {
@@ -40,8 +44,6 @@ library LibroBuddyUtils {
             className = "buddy";
         } else if (_part == LibroBuddyPart.BACKGROUND) {
             className = "background";
-        } else if (_part == LibroBuddyPart.HEADGEAR) {
-            className = "headgear";
         } else if (_part == LibroBuddyPart.LEFT_ORNAMENT) {
             className = "left-ornament";
         } else if (_part == LibroBuddyPart.RIGHT_ORNAMENT) {

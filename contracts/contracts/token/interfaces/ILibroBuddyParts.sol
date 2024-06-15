@@ -17,13 +17,6 @@ interface ILibroBuddyParts is IERC4883, IERC1155 {
 
     event LibroBuddyPartsGatewaySet(string gateway);
 
-    struct LibroBuddyInitParams {
-        uint8 partId;
-        LibroBuddyUtils.LibroBuddyPartData data;
-        string defaultUri;
-        string gateway;
-    }
-
     function part() external view returns (LibroBuddyUtils.LibroBuddyPart);
     function partName() external view returns (string memory);
     function x() external view returns (uint256);

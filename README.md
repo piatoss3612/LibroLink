@@ -44,7 +44,7 @@ This project contains two main parts:
 
 ### Description
 
-This project is a simple and intuitive platform where users can record their reading activities, participate in missions and challenges, and earn rewards. By incorporating gamified elements, the platform makes reading activities more enjoyable and encourages user participation. Based on Web2 user experiences, the platform leverages blockchain technology to provide a new reading experience. This allows users to increase their enjoyment of reading and feel a greater sense of accomplishment.
+This project introduces a simple and intuitive platform for users to record their reading activities, participate in challenges, and earn rewards. By integrating gamified elements, the platform enhances the enjoyment of reading and boosts user engagement. Leveraging blockchain technology, the platform builds upon Web2 user experiences to offer a novel reading experience. This approach allows users to find greater enjoyment in their reading and feel a heightened sense of accomplishment. The platform is designed to be user-friendly and accessible to all reading enthusiasts, regardless of their familiarity with blockchain technology.
 
 ### Problems and Solutions
 

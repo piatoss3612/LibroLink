@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import {ILibroBuddy, IERC6454, IERC4883} from "./interfaces/ILibroBuddy.sol";
 import {ILibroBuddyParts} from "./interfaces/ILibroBuddyParts.sol";
+import {LibroBuddyParts} from "./LibroBuddyParts.sol";
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
@@ -12,6 +13,7 @@ import {LibroBuddyUtils} from "./lib/LibroBuddyUtils.sol";
 
 /**
  * @title LibroNFT
+ * @author piatoss3612
  * @dev Basic ERC721 token.
  */
 contract LibroBuddy is ILibroBuddy, ERC721, AccessControl {
@@ -30,12 +32,46 @@ contract LibroBuddy is ILibroBuddy, ERC721, AccessControl {
     ILibroBuddyParts[] private _parts;
     mapping(uint256 => mapping(ILibroBuddyParts => uint256)) private _partEquipped;
 
-    constructor(address admin) ERC721("LibroBuddy", "LB") {
+    constructor() ERC721("LibroBuddy", "LB") {
         _setRoleAdmin(BUDDY_MINER_ROLE, DEFAULT_ADMIN_ROLE);
         _setRoleAdmin(PART_MINER_ROLE, DEFAULT_ADMIN_ROLE);
-        _grantRole(DEFAULT_ADMIN_ROLE, admin);
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
-        // TODO: create parts
+        ILibroBuddyParts background = new LibroBuddyParts(
+            LibroBuddyUtils.LibroBuddyPartInitParams({
+                partId: 1,
+                data: LibroBuddyUtils.LibroBuddyPartData({x: 0, y: 0, width: 400, height: 400}),
+                defaultUri: "",
+                gateway: "https://green-main-hoverfly-930.mypinata.cloud"
+            })
+        );
+        ILibroBuddyParts buddy = new LibroBuddyParts(
+            LibroBuddyUtils.LibroBuddyPartInitParams({
+                partId: 0,
+                data: LibroBuddyUtils.LibroBuddyPartData({x: 0, y: 0, width: 400, height: 400}),
+                defaultUri: "",
+                gateway: "https://green-main-hoverfly-930.mypinata.cloud"
+            })
+        );
+        ILibroBuddyParts leftOrnament = new LibroBuddyParts(
+            LibroBuddyUtils.LibroBuddyPartInitParams({
+                partId: 2,
+                data: LibroBuddyUtils.LibroBuddyPartData({x: 0, y: 200, width: 160, height: 160}),
+                defaultUri: "",
+                gateway: "https://green-main-hoverfly-930.mypinata.cloud"
+            })
+        );
+        ILibroBuddyParts rightOrnament = new LibroBuddyParts(
+            LibroBuddyUtils.LibroBuddyPartInitParams({
+                partId: 3,
+                data: LibroBuddyUtils.LibroBuddyPartData({x: 240, y: 200, width: 160, height: 160}),
+                defaultUri: "",
+                gateway: "https://green-main-hoverfly-930.mypinata.cloud"
+            })
+        );
+
+        // background -> buddy -> leftOrnament -> rightOrnament order (z-index)
+        _parts = [background, buddy, leftOrnament, rightOrnament];
     }
 
     function width() public view override returns (uint256) {
