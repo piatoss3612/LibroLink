@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-interface IERC6454 { /* is IERC165 */
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+
+interface IERC6454 is IERC165 {
     /**
      * @notice Used to check whether the given token is transferable or not.
      * @dev If this function returns `false`, the transfer of the token MUST revert execution.

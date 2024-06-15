@@ -2,9 +2,10 @@ import usePaymaster from "@/hooks/usePaymaster";
 import useZkSyncClient from "@/hooks/useZkSyncClient";
 import { COUNTER_ABI, COUNTER_ADDRESS } from "@/libs/Counter";
 import { LIBRO_NFT_ABI, LIBRO_NFT_ADDRESS } from "@/libs/LibroNFT";
+import { abbreviateAddress } from "@/libs/utils";
 import { Box, Button, Center, Heading, Text, VStack } from "@chakra-ui/react";
-import { usePrivy } from "@privy-io/react-auth";
 import { useQuery } from "@tanstack/react-query";
+import Image from "next/image";
 import { encodeFunctionData, formatEther } from "viem";
 import { zkSyncSepoliaTestnet } from "viem/chains";
 
@@ -32,7 +33,9 @@ const Dashboard = () => {
     refetchInterval: 3000,
   });
 
-  const ethBalanceValue = formatEther(ethBalance || BigInt(0));
+  const ethBalanceValue = parseFloat(
+    formatEther(ethBalance || BigInt(0))
+  ).toFixed(6);
 
   // ====== Token balance ======
 
@@ -128,12 +131,37 @@ const Dashboard = () => {
     });
   };
 
+  const svgImage = `<svg width="400" height="400" xmlns="http://www.w3.org/2000/svg">
+          <rect height="400" width="400" fill="#F5E6CC" />
+          <image
+            href="https://green-main-hoverfly-930.mypinata.cloud/ipfs/Qma2rD8tG1TsAdkV5hTSJ6vEi4JPWqpb2Vj17Gt8nK8os5"
+            x="0"
+            y="0"
+            height="400"
+            width="400"
+          />
+          <image
+            href="https://green-main-hoverfly-930.mypinata.cloud/ipfs/QmZywoPixkKCyn2QKDtQEi8XgbZ1vLJhZymEheMaHsWerF"
+            x="0"
+            y="200"
+            height="160"
+            width="160"
+          />
+          <image
+            href="https://green-main-hoverfly-930.mypinata.cloud/ipfs/QmSdNBJ6yL7uMxA2Hj3tCT5YMZYaArMA5mKFH5jH37huRU"
+            x="240"
+            y="200"
+            height="160"
+            width="160"
+          />
+        </svg>`;
+
   return (
     <Box display="flex" flexDirection="column">
       <Center my="auto">
         {wallet && (
           <VStack spacing={4}>
-            <Text>Address: {wallet.address}</Text>
+            <Text>Address: {abbreviateAddress(wallet.address)}</Text>
             <Text>Balance: {ethBalanceValue} ETH</Text>
             <VStack spacing={4} border="1px" borderRadius={"md"} p={8} m={4}>
               <Heading>Libro NFT</Heading>
@@ -159,6 +187,7 @@ const Dashboard = () => {
                 Increment Counter
               </Button>
             </VStack>
+            <div dangerouslySetInnerHTML={{ __html: svgImage }} />
           </VStack>
         )}
       </Center>
