@@ -1,0 +1,155 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+import {
+    IPaymaster,
+    ExecutionResult,
+    PAYMASTER_VALIDATION_SUCCESS_MAGIC
+} from "@matterlabs/zksync-contracts/l2/system-contracts/interfaces/IPaymaster.sol";
+import {IPaymasterFlow} from "@matterlabs/zksync-contracts/l2/system-contracts/interfaces/IPaymasterFlow.sol";
+import {
+    TransactionHelper,
+    Transaction
+} from "@matterlabs/zksync-contracts/l2/system-contracts/libraries/TransactionHelper.sol";
+import {BOOTLOADER_FORMAL_ADDRESS} from "@matterlabs/zksync-contracts/l2/system-contracts/Constants.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+
+import {NftGated, IERC721} from "./NftGated.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+contract LibroERC20Paymaster is IPaymaster, NftGated, Ownable {
+    // ====== Custom Errors ======
+    error LibroERC20Paymaster__ZeroAddress();
+    error LibroERC20Paymaster__OnlyBootloaderCanCallThisMethod();
+    error LibroERC20Paymaster__PaymasterInputShouldBeAtLeast4BytesLong();
+    error LibroERC20Paymaster__MinimumAllowanceNotSatisfied();
+    error LibroERC20Paymaster__FailedToTransferTxFeeToBootloader();
+    error LibroERC20Paymaster__UnsupportedPaymasterFlowInPaymasterParams();
+    error LibroERC20Paymaster__FailedToWithdrawFundsFromPaymaster();
+
+    // ====== Modifiers ======
+    modifier onlyBootloader() {
+        if (msg.sender != BOOTLOADER_FORMAL_ADDRESS) {
+            revert LibroERC20Paymaster__OnlyBootloaderCanCallThisMethod();
+        }
+        // Continue execution if called from the bootloader.
+        _;
+    }
+
+    // ====== Constructor ======
+    constructor(address _nft) Ownable(msg.sender) {
+        nft = IERC721(_nft);
+    }
+
+    /**
+     *
+     * @notice Function used to validate and pay for the zkSync transaction. It can be called only by the bootloader.
+     * @param _transaction Structure used to represent zkSync transaction.
+     * @return magic  PAYMASTER_VALIDATION_SUCCESS_MAGIC on validation success.
+     * @return context Empty bytes array, as it is not used in the current implementation.
+     */
+    function validateAndPayForPaymasterTransaction(bytes32, bytes32, Transaction calldata _transaction)
+        external
+        payable
+        onlyBootloader
+        returns (bytes4 magic, bytes memory context)
+    {
+        // By default we consider the transaction as accepted.
+        magic = PAYMASTER_VALIDATION_SUCCESS_MAGIC;
+        if (_transaction.paymasterInput.length < 4) {
+            revert LibroERC20Paymaster__PaymasterInputShouldBeAtLeast4BytesLong();
+        }
+
+        // Check if the user owns the NFT.
+        address userAddress = address(uint160(_transaction.from));
+        if (userAddress == address(0)) {
+            revert LibroERC20Paymaster__ZeroAddress();
+        }
+
+        _requireNftOwner(userAddress);
+
+        bytes4 paymasterInputSelector = bytes4(_transaction.paymasterInput[0:4]);
+
+        // Check if the paymaster flow is approval based.
+        if (paymasterInputSelector == IPaymasterFlow.approvalBased.selector) {
+            (address token, uint256 minAllowance,) =
+                abi.decode(_transaction.paymasterInput[4:], (address, uint256, bytes));
+
+            // TODO: Check if the token is supported.
+
+            // Check if the user has enough allowance.
+            if (IERC20(token).allowance(userAddress, address(this)) < minAllowance) {
+                revert LibroERC20Paymaster__MinimumAllowanceNotSatisfied();
+            }
+
+            // Note, that while the minimal amount of ETH needed is tx.gasPrice * tx.gasLimit,
+            // neither paymaster nor account are allowed to access this context variable.
+            uint256 requiredETH = _transaction.gasLimit * _transaction.maxFeePerGas;
+
+            // TODO: Check the eth to token conversion rate.
+
+            // TODO: Transfer the required amount of tokens to the paymaster.
+
+            // TODO: encode address of token, the required amount and the sponsored amount in the context.
+
+            // The bootloader never returns any data, so it can safely be ignored here.
+            (bool success,) = payable(BOOTLOADER_FORMAL_ADDRESS).call{value: requiredETH}("");
+            if (!success) {
+                revert LibroERC20Paymaster__FailedToTransferTxFeeToBootloader();
+            }
+        } else {
+            revert LibroERC20Paymaster__UnsupportedPaymasterFlowInPaymasterParams();
+        }
+    }
+
+    /**
+     *
+     * @notice Function used to execute extra logic after the zkSync transaction is executed. It can be called only by the bootloader.
+     * @param _context Empty bytes array, as it is not used in the current implementation.
+     * @param _transaction Structure used to represent zkSync transaction.
+     * @param _txResult Enum used to represent the result of the transaction execution.
+     * @param _maxRefundedGas Maximum amount of gas that can be refunded to the paymaster.
+     */
+    function postTransaction(
+        bytes calldata _context,
+        Transaction calldata _transaction,
+        bytes32,
+        bytes32,
+        ExecutionResult _txResult,
+        uint256 _maxRefundedGas
+    ) external payable override onlyBootloader {
+        uint256 gasUsed = _transaction.gasLimit - _maxRefundedGas;
+
+        (address token, uint256 requiredAmount, uint256 sponsoredAmount) = _decodeContext(_context);
+
+        // TODO: If charge exceeds the required amount, refund the difference.
+
+        address userAddress = address(uint160(_transaction.from));
+    }
+
+    function withdraw(address payable _to) external onlyOwner {
+        uint256 balance = address(this).balance;
+        (bool success,) = _to.call{value: balance}("");
+        if (!success) {
+            revert LibroERC20Paymaster__FailedToWithdrawFundsFromPaymaster();
+        }
+    }
+
+    function _encodeContext(address _token, uint256 _requiredAmount, uint256 _sponsoredAmount)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encode(_token, _requiredAmount, _sponsoredAmount);
+    }
+
+    function _decodeContext(bytes memory _context)
+        internal
+        pure
+        returns (address token, uint256 requiredAmount, uint256 sponsoredAmount)
+    {
+        return abi.decode(_context, (address, uint256, uint256));
+    }
+
+    receive() external payable {}
+}
