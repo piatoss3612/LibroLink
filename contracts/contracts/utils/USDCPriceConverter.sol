@@ -35,7 +35,7 @@ contract USDCPriceConverter is IPriceConverter {
         return (uint256(price), _priceFeed.decimals());
     }
 
-    function assetToEth(uint256 assetAmount) external view override returns (uint256 ethAmount) {
+    function assetToEth(uint256 assetAmount) external view override returns (uint256 ethAmount, uint8 ethDecimals) {
         (uint256 price, uint8 priceDecimals) = latestAssetPrice(); // Get the latest price, and the decimals
 
         // Calculate the eth amount without decimals
@@ -43,9 +43,10 @@ contract USDCPriceConverter is IPriceConverter {
 
         // Adjust decimals to match ETH's 18 decimals
         ethAmount = (ethAmount * (10 ** (ETH_DECIMALS - _usdc.decimals())));
+        ethDecimals = ETH_DECIMALS;
     }
 
-    function ethToAsset(uint256 ethAmount) external view override returns (uint256 assetAmount) {
+    function ethToAsset(uint256 ethAmount) external view override returns (uint256 assetAmount, uint8 assetDecimals) {
         (uint256 price, uint8 priceDecimals) = latestAssetPrice(); // Get the latest price, and the decimals
 
         // Calculate the asset amount without decimals
@@ -53,5 +54,6 @@ contract USDCPriceConverter is IPriceConverter {
 
         // Adjust decimals to match the asset's decimals
         assetAmount = (assetAmount * (10 ** _usdc.decimals())) / (10 ** ETH_DECIMALS);
+        assetDecimals = _usdc.decimals();
     }
 }
