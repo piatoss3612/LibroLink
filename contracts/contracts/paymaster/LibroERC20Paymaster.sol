@@ -16,8 +16,9 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 import {NftGated, IERC721} from "./NftGated.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ERC20TokenManager} from "../utils/ERC20TokenManager.sol";
 
-contract LibroERC20Paymaster is IPaymaster, NftGated, Ownable {
+contract LibroERC20Paymaster is IPaymaster, NftGated, ERC20TokenManager {
     // ====== Custom Errors ======
     error LibroERC20Paymaster__ZeroAddress();
     error LibroERC20Paymaster__OnlyBootloaderCanCallThisMethod();
@@ -26,6 +27,10 @@ contract LibroERC20Paymaster is IPaymaster, NftGated, Ownable {
     error LibroERC20Paymaster__FailedToTransferTxFeeToBootloader();
     error LibroERC20Paymaster__UnsupportedPaymasterFlowInPaymasterParams();
     error LibroERC20Paymaster__FailedToWithdrawFundsFromPaymaster();
+    error LibroERC20Paymaster__ExeededMinimumAllowance();
+    error LibroERC20Paymaster__FailedToTransferToken(address token);
+
+    event Refund(address indexed user, address indexed token, uint256 amount);
 
     // ====== Modifiers ======
     modifier onlyBootloader() {
@@ -37,7 +42,7 @@ contract LibroERC20Paymaster is IPaymaster, NftGated, Ownable {
     }
 
     // ====== Constructor ======
-    constructor(address _nft) Ownable(msg.sender) {
+    constructor(address _nft) {
         nft = IERC721(_nft);
     }
 
@@ -75,8 +80,6 @@ contract LibroERC20Paymaster is IPaymaster, NftGated, Ownable {
             (address token, uint256 minAllowance,) =
                 abi.decode(_transaction.paymasterInput[4:], (address, uint256, bytes));
 
-            // TODO: Check if the token is supported.
-
             // Check if the user has enough allowance.
             if (IERC20(token).allowance(userAddress, address(this)) < minAllowance) {
                 revert LibroERC20Paymaster__MinimumAllowanceNotSatisfied();
@@ -86,11 +89,22 @@ contract LibroERC20Paymaster is IPaymaster, NftGated, Ownable {
             // neither paymaster nor account are allowed to access this context variable.
             uint256 requiredETH = _transaction.gasLimit * _transaction.maxFeePerGas;
 
-            // TODO: Check the eth to token conversion rate.
+            // Convert the required amount of ETH to tokens. If the token is not supported, the function will revert.
+            (uint256 requiredToken,) = getEthPriceInToken(token, requiredETH);
 
-            // TODO: Transfer the required amount of tokens to the paymaster.
+            // Check if required token amount exceeds the minimal allowance.
+            if (requiredToken > minAllowance) {
+                revert LibroERC20Paymaster__ExeededMinimumAllowance();
+            }
 
-            // TODO: encode address of token, the required amount and the sponsored amount in the context.
+            // Transfer the required amount of tokens to the paymaster.
+            bool transferred = IERC20(token).transferFrom(userAddress, address(this), requiredToken);
+            if (!transferred) {
+                revert LibroERC20Paymaster__FailedToTransferToken(token);
+            }
+
+            // Encode the token address, the required amount and the sponsored amount in the context.
+            context = _encodeContext(token, requiredToken, 0);
 
             // The bootloader never returns any data, so it can safely be ignored here.
             (bool success,) = payable(BOOTLOADER_FORMAL_ADDRESS).call{value: requiredETH}("");
@@ -120,11 +134,24 @@ contract LibroERC20Paymaster is IPaymaster, NftGated, Ownable {
     ) external payable override onlyBootloader {
         uint256 gasUsed = _transaction.gasLimit - _maxRefundedGas;
 
-        (address token, uint256 requiredAmount, uint256 sponsoredAmount) = _decodeContext(_context);
+        (address token, uint256 requiredAmount,) = _decodeContext(_context);
 
-        // TODO: If charge exceeds the required amount, refund the difference.
+        // Calculate the amount of tokens used.
+        (uint256 usedToken,) = getEthPriceInToken(token, gasUsed);
 
-        address userAddress = address(uint160(_transaction.from));
+        // Calculate the amount of tokens that should be refunded.
+        uint256 refundAmount = requiredAmount - usedToken;
+
+        // Refund the unused tokens to the user.
+        if (refundAmount > 0) {
+            address userAddress = address(uint160(_transaction.from));
+            bool transferred = IERC20(token).transfer(userAddress, refundAmount);
+            if (!transferred) {
+                revert LibroERC20Paymaster__FailedToTransferToken(token);
+            }
+
+            emit Refund(userAddress, token, refundAmount);
+        }
     }
 
     function withdraw(address payable _to) external onlyOwner {

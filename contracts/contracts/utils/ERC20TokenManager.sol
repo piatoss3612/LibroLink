@@ -15,7 +15,7 @@ abstract contract ERC20TokenManager is Ownable {
 
     constructor() Ownable(msg.sender) {}
 
-    function setTokenPriceConverter(address token, IPriceConverter priceConverter) external {
+    function setTokenPriceConverter(address token, IPriceConverter priceConverter) external onlyOwner {
         if (address(priceConverter) == address(0)) {
             revert ERC20TokenManager__InvalidToken();
         }
@@ -39,12 +39,12 @@ abstract contract ERC20TokenManager is Ownable {
         }
     }
 
-    function getTokenPriceInEth(address token, uint256 amount) external view returns (uint256, uint8) {
+    function getTokenPriceInEth(address token, uint256 amount) public view returns (uint256, uint8) {
         IPriceConverter converter = _requireTokenPriceConverter(token);
         return converter.assetToEth(amount);
     }
 
-    function getEthPriceInToken(address token, uint256 ethAmount) external view returns (uint256, uint8) {
+    function getEthPriceInToken(address token, uint256 ethAmount) public view returns (uint256, uint8) {
         IPriceConverter converter = _requireTokenPriceConverter(token);
         return converter.ethToAsset(ethAmount);
     }
