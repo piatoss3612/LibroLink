@@ -7,7 +7,7 @@ import { zkSyncSepoliaTestnet } from "viem/zksync";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { ZkSyncClientProvider } from "@/context/ZkSyncClient";
 import { PaymasterProvider } from "@/context/Paymaster";
-import Layout from "@/components/layout";
+import "@fontsource-variable/baloo-2";
 
 // Custom theme
 const colors = {
@@ -23,9 +23,8 @@ const colors = {
 };
 
 const fonts = {
-  heading: "Baloo 2, cursive",
-  body: "Baloo 2, cursive",
-  button: "Baloo 2, cursive",
+  heading: `'Baloo 2 Variable', 'Sans-serif'`,
+  body: `'Baloo 2 Variable', 'Sans-serif'`,
 };
 
 const styles = {
@@ -67,9 +66,7 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
       <ChakraProvider theme={theme}>
         <ZkSyncClientProvider>
           <QueryClientProvider client={queryClient}>
-            <PaymasterProvider>
-              <Layout>{mounted && children}</Layout>
-            </PaymasterProvider>
+            <PaymasterProvider>{mounted && children}</PaymasterProvider>
           </QueryClientProvider>
         </ZkSyncClientProvider>
       </ChakraProvider>

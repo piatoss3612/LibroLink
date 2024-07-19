@@ -1413,6 +1413,11 @@
     "@ethersproject/properties" "^5.7.0"
     "@ethersproject/strings" "^5.7.0"
 
+"@fontsource-variable/baloo-2@^5.0.20":
+  version "5.0.20"
+  resolved "https://registry.yarnpkg.com/@fontsource-variable/baloo-2/-/baloo-2-5.0.20.tgz#18036b882034f2c9c05d23087756d653c7127940"
+  integrity sha512-lVEoEEO6UpyZBpRKjW8oBRxgw57YjP4fyBga3/WblDScic901hrRqnGSHXkFcAXYG3DVBt7r3qIh6C20lMyeKg==
+
 "@headlessui/react@^1.7.18":
   version "1.7.19"
   resolved "https://registry.yarnpkg.com/@headlessui/react/-/react-1.7.19.tgz#91c78cf5fcb254f4a0ebe96936d48421caf75f40"
