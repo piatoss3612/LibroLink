@@ -1,31 +1,33 @@
-import { Box, Center } from "@chakra-ui/react";
-import { usePrivy } from "@privy-io/react-auth";
+"use client";
+
 import React, { useState } from "react";
+import { usePrivy } from "@privy-io/react-auth";
+import { useRouter } from "next/navigation";
 import BottomNavBar from "./BottomNavbar";
 import Footer from "./Footer";
+import LayoutBox from "./LayoutBox";
+import LayoutContent from "./LayoutContent";
+import LoadingSpinner from "./LoadingSpinner";
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
-  const { authenticated } = usePrivy();
+  const { authenticated, ready } = usePrivy();
   const [navBarHeight, setNavBarHeight] = useState(0);
+  const router = useRouter();
+
+  if (ready && !authenticated) {
+    router.push("/login");
+  }
 
   return (
-    <Box
-      display="flex"
-      flexDirection="column"
-      bg="brand.ivory"
-      minH="100vh"
-      p={4}
-      color="brand.darkChocolate"
-    >
-      <Center flexGrow={1} pb={authenticated ? `${navBarHeight}px` : "0"}>
-        {children}
-      </Center>
-      {authenticated ? (
+    <LayoutBox>
+      <LayoutContent pb={authenticated ? navBarHeight : 0}>
+        {ready ? children : <LoadingSpinner />}
+      </LayoutContent>
+      {ready && authenticated && (
         <BottomNavBar setNavBarHeight={setNavBarHeight} />
-      ) : (
-        <Footer />
       )}
-    </Box>
+      {!authenticated && <Footer />}
+    </LayoutBox>
   );
 };
 
