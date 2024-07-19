@@ -16,9 +16,9 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 import {NftGated, IERC721} from "./NftGated.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ERC20TokenManager} from "../utils/ERC20TokenManager.sol";
+import {ERC20TokenPriceManager} from "../token/ERC20TokenPriceManager.sol";
 
-contract LibroERC20Paymaster is IPaymaster, NftGated, ERC20TokenManager {
+contract LibroERC20Paymaster is IPaymaster, NftGated, ERC20TokenPriceManager {
     // ====== Custom Errors ======
     error LibroERC20Paymaster__ZeroAddress();
     error LibroERC20Paymaster__OnlyBootloaderCanCallThisMethod();
@@ -71,8 +71,6 @@ contract LibroERC20Paymaster is IPaymaster, NftGated, ERC20TokenManager {
             revert LibroERC20Paymaster__ZeroAddress();
         }
 
-        _requireNftOwner(userAddress);
-
         bytes4 paymasterInputSelector = bytes4(_transaction.paymasterInput[0:4]);
 
         // Check if the paymaster flow is approval based.
@@ -95,6 +93,12 @@ contract LibroERC20Paymaster is IPaymaster, NftGated, ERC20TokenManager {
             // Check if required token amount exceeds the minimal allowance.
             if (requiredToken > minAllowance) {
                 revert LibroERC20Paymaster__ExeededMinimumAllowance();
+            }
+
+            // Check if the user owns the gated NFT.
+            if (isNftOwner(userAddress)) {
+                // Give 5% discount to the user.
+                requiredToken = (requiredToken * 95) / 100;
             }
 
             // Transfer the required amount of tokens to the paymaster.

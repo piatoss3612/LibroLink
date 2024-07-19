@@ -5,7 +5,7 @@ import {IPriceConverter} from "./interfaces/IPriceConverter.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-abstract contract ERC20TokenManager is Ownable {
+abstract contract ERC20TokenPriceManager is Ownable {
     error ERC20TokenManager__InvalidToken();
     error ERC20TokenManager__InvalidPriceConverter();
 
