@@ -603,7 +603,7 @@ const LIBRO_PAYMASTER_ABI = [
 ] as const;
 
 const LIBRO_ERC20_PAYMASTER_ADDRESS =
-  "0x39ed16159280dB32Ee024e1E88ad555355c70721";
+  "0xD77A1b078c7c17f6B44475a107926C0725317Baa" as `0x${string}`;
 
 const LIBRO_ERC20_PAYMASTER_ABI = [
   {
@@ -628,7 +628,18 @@ const LIBRO_ERC20_PAYMASTER_ABI = [
     type: "error",
   },
   {
-    inputs: [],
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "required",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "allowed",
+        type: "uint256",
+      },
+    ],
     name: "LibroERC20Paymaster__ExeededMinimumAllowance",
     type: "error",
   },
@@ -654,7 +665,18 @@ const LIBRO_ERC20_PAYMASTER_ABI = [
     type: "error",
   },
   {
-    inputs: [],
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "required",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "actual",
+        type: "uint256",
+      },
+    ],
     name: "LibroERC20Paymaster__MinimumAllowanceNotSatisfied",
     type: "error",
   },

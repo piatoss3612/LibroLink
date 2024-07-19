@@ -1,4 +1,4 @@
-import { Contract, ethers } from "ethers";
+import { Contract } from "ethers";
 import { deployContract, getWallet } from "./utils";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
@@ -14,7 +14,7 @@ export default async function (hre: HardhatRuntimeEnvironment) {
 
   //
   const wallet = getWallet();
-  const erc20PaymasterAddress = "0x39ed16159280dB32Ee024e1E88ad555355c70721";
+  const erc20PaymasterAddress = "0xD77A1b078c7c17f6B44475a107926C0725317Baa";
   const erc20PaymasterArtifact = await hre.artifacts.readArtifact(
     "LibroERC20Paymaster"
   );

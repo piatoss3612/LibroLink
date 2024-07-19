@@ -23,11 +23,11 @@ contract LibroERC20Paymaster is IPaymaster, NftGated, ERC20TokenPriceManager {
     error LibroERC20Paymaster__ZeroAddress();
     error LibroERC20Paymaster__OnlyBootloaderCanCallThisMethod();
     error LibroERC20Paymaster__PaymasterInputShouldBeAtLeast4BytesLong();
-    error LibroERC20Paymaster__MinimumAllowanceNotSatisfied();
+    error LibroERC20Paymaster__MinimumAllowanceNotSatisfied(uint256 required, uint256 actual);
     error LibroERC20Paymaster__FailedToTransferTxFeeToBootloader();
     error LibroERC20Paymaster__UnsupportedPaymasterFlowInPaymasterParams();
     error LibroERC20Paymaster__FailedToWithdrawFundsFromPaymaster();
-    error LibroERC20Paymaster__ExeededMinimumAllowance();
+    error LibroERC20Paymaster__ExeededMinimumAllowance(uint256 required, uint256 allowed);
     error LibroERC20Paymaster__FailedToTransferToken(address token);
 
     event Refund(address indexed user, address indexed token, uint256 amount);
@@ -74,49 +74,50 @@ contract LibroERC20Paymaster is IPaymaster, NftGated, ERC20TokenPriceManager {
         bytes4 paymasterInputSelector = bytes4(_transaction.paymasterInput[0:4]);
 
         // Check if the paymaster flow is approval based.
-        if (paymasterInputSelector == IPaymasterFlow.approvalBased.selector) {
-            (address token, uint256 minAllowance,) =
-                abi.decode(_transaction.paymasterInput[4:], (address, uint256, bytes));
-
-            // Check if the user has enough allowance.
-            if (IERC20(token).allowance(userAddress, address(this)) < minAllowance) {
-                revert LibroERC20Paymaster__MinimumAllowanceNotSatisfied();
-            }
-
-            // Note, that while the minimal amount of ETH needed is tx.gasPrice * tx.gasLimit,
-            // neither paymaster nor account are allowed to access this context variable.
-            uint256 requiredETH = _transaction.gasLimit * _transaction.maxFeePerGas;
-
-            // Convert the required amount of ETH to tokens. If the token is not supported, the function will revert.
-            (uint256 requiredToken,) = getEthPriceInToken(token, requiredETH);
-
-            // Check if required token amount exceeds the minimal allowance.
-            if (requiredToken > minAllowance) {
-                revert LibroERC20Paymaster__ExeededMinimumAllowance();
-            }
-
-            // Check if the user owns the gated NFT.
-            if (isNftOwner(userAddress)) {
-                // Give 5% discount to the user.
-                requiredToken = (requiredToken * 95) / 100;
-            }
-
-            // Transfer the required amount of tokens to the paymaster.
-            bool transferred = IERC20(token).transferFrom(userAddress, address(this), requiredToken);
-            if (!transferred) {
-                revert LibroERC20Paymaster__FailedToTransferToken(token);
-            }
-
-            // Encode the token address, the required amount and the sponsored amount in the context.
-            context = _encodeContext(token, requiredToken, 0);
-
-            // The bootloader never returns any data, so it can safely be ignored here.
-            (bool success,) = payable(BOOTLOADER_FORMAL_ADDRESS).call{value: requiredETH}("");
-            if (!success) {
-                revert LibroERC20Paymaster__FailedToTransferTxFeeToBootloader();
-            }
-        } else {
+        if (paymasterInputSelector != IPaymasterFlow.approvalBased.selector) {
             revert LibroERC20Paymaster__UnsupportedPaymasterFlowInPaymasterParams();
+        }
+
+        // Decode the paymaster input.
+        (address token, uint256 minAllowance,) = abi.decode(_transaction.paymasterInput[4:], (address, uint256, bytes));
+
+        // Check if the user has enough allowance.
+        uint256 actualAllowance = IERC20(token).allowance(userAddress, address(this));
+        if (actualAllowance < minAllowance) {
+            revert LibroERC20Paymaster__MinimumAllowanceNotSatisfied(minAllowance, actualAllowance);
+        }
+
+        // Note, that while the minimal amount of ETH needed is tx.gasPrice * tx.gasLimit,
+        // neither paymaster nor account are allowed to access this context variable.
+        uint256 requiredETH = _transaction.gasLimit * _transaction.maxFeePerGas;
+
+        // Convert the required amount of ETH to tokens. If the token is not supported, the function will revert.
+        (uint256 requiredToken,) = getEthPriceInToken(token, requiredETH);
+
+        // Check if required token amount exceeds the minimal allowance.
+        if (requiredToken > minAllowance) {
+            revert LibroERC20Paymaster__ExeededMinimumAllowance(requiredToken, minAllowance);
+        }
+
+        // Check if the user owns the gated NFT.
+        if (isNftOwner(userAddress)) {
+            // Give 5% discount to the user.
+            requiredToken = (requiredToken * 95) / 100;
+        }
+
+        // Transfer the required amount of tokens to the paymaster.
+        bool transferred = IERC20(token).transferFrom(userAddress, address(this), requiredToken);
+        if (!transferred) {
+            revert LibroERC20Paymaster__FailedToTransferToken(token);
+        }
+
+        // Encode the token address, the required amount and the sponsored amount in the context.
+        context = _encodeContext(token, requiredToken, 0);
+
+        // The bootloader never returns any data, so it can safely be ignored here.
+        (bool success,) = payable(BOOTLOADER_FORMAL_ADDRESS).call{value: requiredETH}("");
+        if (!success) {
+            revert LibroERC20Paymaster__FailedToTransferTxFeeToBootloader();
         }
     }
 
@@ -136,7 +137,7 @@ contract LibroERC20Paymaster is IPaymaster, NftGated, ERC20TokenPriceManager {
         ExecutionResult _txResult,
         uint256 _maxRefundedGas
     ) external payable override onlyBootloader {
-        uint256 gasUsed = _transaction.gasLimit - _maxRefundedGas;
+        uint256 gasUsed = (_transaction.gasLimit - _maxRefundedGas) * _transaction.maxFeePerGas;
 
         (address token, uint256 requiredAmount,) = _decodeContext(_context);
 

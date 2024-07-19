@@ -305,10 +305,17 @@ const PaymasterProvider = ({ children }: { children: React.ReactNode }) => {
           cost
         );
 
+        const tokenBalance = await getTokenBalance(
+          selectedToken.address,
+          wallet.address as `0x${string}`
+        );
+
+        // Just in case the token amount is less than the fee, add some extra 10% token
         paymaster = LIBRO_ERC20_PAYMASTER_ADDRESS;
         paymasterInput = getApprovalBasedPaymasterInput({
           innerInput: "0x",
-          minAllowance: tokenAmount[0],
+          // minAllowance: tokenAmount[0] * BigInt(1000),
+          minAllowance: tokenBalance,
           token: selectedToken.address,
         });
       }
