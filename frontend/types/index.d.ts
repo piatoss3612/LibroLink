@@ -1,5 +1,7 @@
 import { Account, Address } from "viem";
 
+type PaymasterType = "general" | "approval";
+
 interface PaymasterRequest {
   name: string; // The name of the request
   from?: Account | Address; // The account or address from which the transaction is sent
@@ -8,4 +10,4 @@ interface PaymasterRequest {
   value?: bigint; // The value of the transaction
 }
 
-export { PaymasterRequest };
+export { PaymasterType, PaymasterRequest };

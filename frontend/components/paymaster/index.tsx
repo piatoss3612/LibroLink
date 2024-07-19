@@ -1,20 +1,23 @@
 import { Modal, ModalOverlay } from "@chakra-ui/react";
-import ResultModalContent from "./result";
-import LoadingModalContent from "./loading";
-import PaymentModalContent from "./payment";
+import { PaymasterType } from "@/types";
+import PaymasterModalContent from "./PaymasterModalContent";
+import { ResultModalBody, ResultModalFooter } from "./result";
+import LoadingModalBody from "./loading";
+import { PaymentModalBody, PaymentModalFooter } from "./payment";
 
 interface PaymentModalProps {
   onClose: () => void;
   isOpen: boolean;
   isLoading: boolean;
   requestName: string;
+  paymasterType: PaymasterType;
   gasPrice: string;
   fee: string;
   cost: string;
-  dailyLimit: bigint;
+  dailyLimit: string;
+  dailyTxCount: string;
   canResetDailyTxCount: boolean;
   hasReachedDailyLimit: boolean;
-  dailyTxCount: bigint;
   isBanned: boolean;
   isNftOwner: boolean;
   txStatus: "success" | "reverted" | "";
@@ -27,6 +30,7 @@ const PaymasterModal = ({
   isOpen,
   isLoading,
   requestName,
+  paymasterType,
   gasPrice,
   fee,
   cost,
@@ -50,6 +54,39 @@ const PaymasterModal = ({
     : "";
   const txResult = txStatus === "success";
 
+  const title = txHash
+    ? "Payment Complete"
+    : isLoading
+    ? "Processing Payment"
+    : "Confirm Payment";
+
+  const modalBody = txHash ? (
+    <ResultModalBody txResult={txResult} txHash={txHash} />
+  ) : isLoading ? (
+    <LoadingModalBody />
+  ) : (
+    <PaymentModalBody
+      errorMessage={errorMessage}
+      requestName={requestName}
+      fee={fee}
+      gasPrice={gasPrice}
+      dailyTxCount={dailyTxCount}
+      dailyLimit={dailyLimit}
+      cost={cost}
+      canResetDailyTxCount={canResetDailyTxCount}
+      paymasterAvailable={paymasterAvailable}
+    />
+  );
+
+  const modalFooter = txHash ? (
+    <ResultModalFooter onClose={onClose} />
+  ) : isLoading ? null : (
+    <PaymentModalFooter
+      paymasterAvailable={paymasterAvailable}
+      confirmPayment={confirmPayment}
+    />
+  );
+
   return (
     <Modal
       isCentered
@@ -60,29 +97,12 @@ const PaymasterModal = ({
       trapFocus={false}
     >
       <ModalOverlay />
-      {!isLoading && !txHash && (
-        <PaymentModalContent
-          onClose={onClose}
-          errorMessage={errorMessage}
-          requestName={requestName}
-          fee={fee}
-          gasPrice={gasPrice}
-          dailyTxCount={dailyTxCount.toString()}
-          dailyLimit={dailyLimit.toString()}
-          cost={cost}
-          canResetDailyTxCount={canResetDailyTxCount}
-          paymasterAvailable={paymasterAvailable}
-          confirmPayment={confirmPayment}
-        />
-      )}
-      {isLoading && <LoadingModalContent onClose={onClose} />}
-      {!isLoading && txHash && (
-        <ResultModalContent
-          onClose={onClose}
-          txResult={txResult}
-          txHash={txHash}
-        />
-      )}
+      <PaymasterModalContent
+        title={title}
+        onClose={onClose}
+        modalBody={modalBody}
+        modalFooter={modalFooter}
+      />
     </Modal>
   );
 };

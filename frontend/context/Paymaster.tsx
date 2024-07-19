@@ -4,11 +4,11 @@ import {
   LIBRO_PAYMASTER_ABI,
   LIBRO_PAYMASTER_ADDRESS,
 } from "@/libs/LibroPaymaster";
-import { PaymasterRequest } from "@/types";
+import { formatBigNumber, formatEstimateFee } from "@/libs/utils";
+import { PaymasterRequest, PaymasterType } from "@/types";
 import { useDisclosure, useToast } from "@chakra-ui/react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { createContext, useState } from "react";
-import { formatEther } from "viem";
 import {
   EstimateFeeReturnType,
   getGeneralPaymasterInput,
@@ -36,6 +36,9 @@ const PaymasterProvider = ({ children }: { children: React.ReactNode }) => {
   const [request, setRequest] = useState<PaymasterRequest | null>(null);
   const [callback, setCallback] = useState<() => void>(() => {});
 
+  // State for the paymaster (general, approval)
+  const [paymasterType, setPaymasterType] = useState<PaymasterType>("general");
+
   // State for the loading status and transaction result
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [txStatus, setTxStatus] = useState<"success" | "reverted" | "">("");
@@ -50,6 +53,8 @@ const PaymasterProvider = ({ children }: { children: React.ReactNode }) => {
     if (!request) {
       throw new Error("Request not found");
     }
+
+    // TODO: Get the paymaster input based on the paymaster type
 
     const paymasterInput = getGeneralPaymasterInput({
       innerInput: "0x",
@@ -72,14 +77,7 @@ const PaymasterProvider = ({ children }: { children: React.ReactNode }) => {
     refetchInterval: 3000, // Refetch every 3 seconds
   });
 
-  const estimateFeeValue =
-    estimateFee ||
-    ({ gasLimit: BigInt(0), maxFeePerGas: BigInt(0) } as EstimateFeeReturnType);
-  const gasPrice = formatEther(estimateFeeValue.maxFeePerGas);
-  const fee = formatEther(estimateFeeValue.gasLimit);
-  const cost = formatEther(
-    estimateFeeValue.maxFeePerGas * estimateFeeValue.gasLimit
-  );
+  const { gasPrice, fee, cost } = formatEstimateFee(estimateFee);
 
   // Function to open the paymaster modal
   const openPaymasterModal = (
@@ -118,6 +116,8 @@ const PaymasterProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       setIsLoading(true);
+
+      // TODO: Get the paymaster input based on the paymaster type
 
       // Get the paymaster input
       const paymasterInput = getGeneralPaymasterInput({
@@ -254,7 +254,7 @@ const PaymasterProvider = ({ children }: { children: React.ReactNode }) => {
     ],
   });
 
-  const dailyLimit = dailyLimitQuery.data || BigInt(0);
+  const dailyLimit = formatBigNumber(dailyLimitQuery.data);
   const [canResetDailyTxCount, hasReachedDailyLimit, dailyTxCount] =
     checkDailyLimitQuery.data || [false, false, BigInt(0)];
   const isBanned = isBannedQuery.data || false;
@@ -271,13 +271,14 @@ const PaymasterProvider = ({ children }: { children: React.ReactNode }) => {
         onClose={closePaymasterModal}
         isLoading={isLoading}
         requestName={request?.name || "Unknown Request"}
+        paymasterType={paymasterType}
         gasPrice={gasPrice}
         fee={fee}
         cost={cost}
         dailyLimit={dailyLimit}
         canResetDailyTxCount={canResetDailyTxCount}
         hasReachedDailyLimit={hasReachedDailyLimit}
-        dailyTxCount={dailyTxCount}
+        dailyTxCount={dailyTxCount.toString()}
         isBanned={isBanned}
         isNftOwner={isNftOwner}
         txStatus={txStatus}
