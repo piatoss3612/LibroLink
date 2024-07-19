@@ -146,6 +146,10 @@ contract LibroERC20Paymaster is IPaymaster, NftGated, ERC20TokenPriceManager {
         // Calculate the amount of tokens that should be refunded.
         uint256 refundAmount = requiredAmount - usedToken;
 
+        // Take 2% fee from the used tokens for extra gas consumption.
+        uint256 fee = (usedToken * 2) / 100;
+        refundAmount -= fee;
+
         // Refund the unused tokens to the user.
         if (refundAmount > 0) {
             address userAddress = address(uint160(_transaction.from));
