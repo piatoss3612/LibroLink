@@ -1,11 +1,4 @@
-import {
-  Divider,
-  Highlight,
-  ModalBody,
-  TabPanel,
-  Stack,
-  Tooltip,
-} from "@chakra-ui/react";
+import { Divider, Highlight, TabPanel, Stack, Tooltip } from "@chakra-ui/react";
 import { CheckCircleIcon, SmallCloseIcon } from "@chakra-ui/icons";
 import { Line } from "../common";
 import usePaymaster from "@/hooks/usePaymaster";
@@ -22,15 +15,11 @@ const GeneralPaymasterTab = () => {
     canResetDailyTxCount,
     paymasterAvailable,
     errorMessage,
-    paymasterType,
-    selectedToken,
-    setSelectedToken,
-    supportedTokensList,
   } = usePaymaster();
 
   return (
     <TabPanel>
-      <Stack m={4} spacing={4} justify="center" align="center">
+      <Stack spacing={4} justify="center" align="center">
         {errorMessage && (
           <Highlight
             query={errorMessage}

@@ -1,6 +1,6 @@
 import PaymasterModal from "@/components/paymaster";
 import useZkSyncClient from "@/hooks/useZkSyncClient";
-import IERC20_ABI from "@/libs/IERC20";
+import ERC20_ABI from "@/libs/ERC20";
 import IERC721_ABI from "@/libs/IERC721";
 import { LIBRO_NFT_ADDRESS } from "@/libs/LibroNFT";
 import {
@@ -44,6 +44,7 @@ interface PaymasterContextValue {
   hasReachedDailyLimit: boolean;
   dailyTxCount: string;
   isNftOwner: boolean;
+  tokenBalance: string;
   ethPriceInToken: string;
   gasPrice: string;
   fee: string;
@@ -104,6 +105,7 @@ const PaymasterProvider = ({ children }: { children: React.ReactNode }) => {
     // Reset the state
     setRequest(null);
     setPaymasterType("general");
+    setSelectedToken(null);
     setCallback(() => {});
     setTxStatus("");
     setTxHash("");
@@ -206,9 +208,23 @@ const PaymasterProvider = ({ children }: { children: React.ReactNode }) => {
 
     return await publicClient.readContract({
       address: tokenAddress,
-      abi: IERC20_ABI,
+      abi: ERC20_ABI,
       functionName: "balanceOf",
       args: [account],
+    });
+  };
+
+  const getTokenDecimals = async (
+    tokenAddress: `0x${string}`
+  ): Promise<number> => {
+    if (!publicClient) {
+      throw new Error("Public client not found");
+    }
+
+    return await publicClient.readContract({
+      address: tokenAddress,
+      abi: ERC20_ABI,
+      functionName: "decimals",
     });
   };
 
@@ -371,21 +387,50 @@ const PaymasterProvider = ({ children }: { children: React.ReactNode }) => {
   });
 
   // ==================== APPROVAL BASED PAYMASTER QUERY ====================
-  const ethPriceInTokenQuery = useQuery({
-    queryKey: ["ethPriceInToken", selectedToken?.address],
-    queryFn: async () => {
-      const estimateFee = await getEstimateFee();
-      const fee = estimateFee.gasLimit * estimateFee.maxFeePerGas;
+  const [tokenBalanceQuery, tokenDecimalsQuery, ethPriceInTokenQuery] =
+    useQueries({
+      queries: [
+        {
+          queryKey: ["tokenBalance", selectedToken?.address, wallet?.address],
+          queryFn: async () => {
+            return await getTokenBalance(
+              selectedToken!.address,
+              wallet!.address as `0x${string}`
+            );
+          },
+          enabled: !!publicClient && !!selectedToken && !isGeneralPaymaster,
+          refetchInterval: 3000,
+        },
+        {
+          queryKey: ["tokenDecimals", selectedToken?.address],
+          queryFn: async () => {
+            return await getTokenDecimals(selectedToken!.address);
+          },
+          enabled: !!publicClient && !!selectedToken && !isGeneralPaymaster,
+          refetchInterval: 3000,
+        },
+        {
+          queryKey: ["ethPriceInToken", selectedToken?.address],
+          queryFn: async () => {
+            const estimateFee = await getEstimateFee();
+            const fee = estimateFee.gasLimit * estimateFee.maxFeePerGas;
 
-      return await getEthPriceInToken(selectedToken!.address, fee);
-    },
-    enabled: !!publicClient && !!selectedToken && !isGeneralPaymaster,
-    refetchInterval: 3000,
-  });
+            return await getEthPriceInToken(selectedToken!.address, fee);
+          },
+          enabled: !!publicClient && !!selectedToken && !isGeneralPaymaster,
+          refetchInterval: 3000,
+        },
+      ],
+    });
 
   // ==================== ESTIMATE FEE QUERY ====================
   const estimateFeeQuery = useQuery({
-    queryKey: ["estimateFee", wallet?.address],
+    queryKey: [
+      "estimateFee",
+      wallet?.address,
+      paymasterType,
+      selectedToken?.address,
+    ],
     queryFn: getEstimateFee,
     enabled: !!publicClient && !!wallet && !!request,
     refetchInterval: 3000,
@@ -398,15 +443,20 @@ const PaymasterProvider = ({ children }: { children: React.ReactNode }) => {
   const isBanned = isBannedQuery.data || false;
   const isNftOwner = isNftOwnerQuery.data || false;
   const ethPriceInTokenData = ethPriceInTokenQuery.data || [BigInt(0), 0];
+
   const ethPriceInToken = formatUnitsToFixed(
     ethPriceInTokenData[0],
     ethPriceInTokenData[1]
+  );
+  const tokenBalance = formatUnitsToFixed(
+    tokenBalanceQuery.data || BigInt(0),
+    tokenDecimalsQuery.data || 0
   );
   const { gasPrice, fee, cost } = formatEstimateFee(estimateFeeQuery.data);
 
   const paymasterAvailable = isGeneralPaymaster
     ? !isBanned && isNftOwner && !hasReachedDailyLimit
-    : true;
+    : !!selectedToken && tokenBalance !== "0";
   const errorMessage = isBanned
     ? "Banned account are not allowed"
     : !isNftOwner
@@ -435,6 +485,7 @@ const PaymasterProvider = ({ children }: { children: React.ReactNode }) => {
         hasReachedDailyLimit,
         dailyTxCount: dailyTxCount.toString(),
         isNftOwner,
+        tokenBalance,
         ethPriceInToken,
         gasPrice,
         fee,

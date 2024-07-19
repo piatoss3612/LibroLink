@@ -13,9 +13,6 @@ import { PaymasterType } from "@/types";
 
 const PaymentModalBody = () => {
   const { paymasterType, setPaymasterType } = usePaymaster();
-
-  console.log("paymasterType", paymasterType);
-
   const tabs = [
     {
       name: "General",
@@ -35,7 +32,7 @@ const PaymentModalBody = () => {
 
   return (
     <ModalBody bg={"gray.100"} mx={6} rounded={"md"}>
-      <Tabs isFitted onChange={handleTabChange}>
+      <Tabs isFitted onChange={handleTabChange} variant="soft-rounded">
         <TabList>
           {tabs.map((tab, index) => (
             <Tab key={index}>{tab.name}</Tab>
