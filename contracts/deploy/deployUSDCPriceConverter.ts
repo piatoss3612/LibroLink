@@ -4,17 +4,18 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 export default async function (hre: HardhatRuntimeEnvironment) {
   // Deploy USDCPriceConverter
-  const usdcAddress = "0xAe045DE5638162fa134807Cb558E15A3F5A7F853";
+  const mockUSDC = await deployContract("MockUSDC", []);
+  const mockUSDCAddress = await mockUSDC.getAddress();
+
   const priceFeed = "0xfEefF7c3fB57d18C5C6Cdd71e45D2D0b4F9377bF"; // ETH/USD
 
   const priceConverter = await deployContract("USDCPriceConverter", [
-    usdcAddress,
+    mockUSDCAddress,
     priceFeed,
   ]);
 
-  //
   const wallet = getWallet();
-  const erc20PaymasterAddress = "0xD77A1b078c7c17f6B44475a107926C0725317Baa";
+  const erc20PaymasterAddress = "0xE0d114C895933Ec646f851ce0C2faD1BB3726363";
   const erc20PaymasterArtifact = await hre.artifacts.readArtifact(
     "LibroERC20Paymaster"
   );
@@ -29,7 +30,7 @@ export default async function (hre: HardhatRuntimeEnvironment) {
   const priceConverterAddress = await priceConverter.getAddress();
 
   const tx = await erc20Paymaster.setTokenPriceConverter(
-    usdcAddress,
+    mockUSDCAddress,
     priceConverterAddress
   );
 

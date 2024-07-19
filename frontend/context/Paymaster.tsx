@@ -9,6 +9,7 @@ import {
   LIBRO_PAYMASTER_ABI,
   LIBRO_PAYMASTER_ADDRESS,
 } from "@/libs/LibroPaymaster";
+import { USDC_ADDRESS } from "@/libs/PriceConverter";
 import {
   formatBigNumber,
   formatEstimateFee,
@@ -74,7 +75,7 @@ const PaymasterProvider = ({ children }: { children: React.ReactNode }) => {
   );
   const supportedTokensList: ERC20TokenMetadata[] = [
     {
-      address: "0xAe045DE5638162fa134807Cb558E15A3F5A7F853",
+      address: USDC_ADDRESS,
       decimals: 6,
       symbol: "USDC",
       name: "USDC",
@@ -310,7 +311,7 @@ const PaymasterProvider = ({ children }: { children: React.ReactNode }) => {
           wallet.address as `0x${string}`
         );
 
-        // Just in case the token amount is less than the fee, add some extra 10% token
+        // Just in case the token amount is less than the fee, add some extra 20% token
         paymaster = LIBRO_ERC20_PAYMASTER_ADDRESS;
         paymasterInput = getApprovalBasedPaymasterInput({
           innerInput: "0x",

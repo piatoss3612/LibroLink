@@ -23,7 +23,16 @@ const formatUnitsToFixed = (
   }
 
   const formattedUnits = formatUnits(value, decimals);
-  return parseFloat(formattedUnits).toFixed(length);
+  const [integer, fractional] = formattedUnits.split(".");
+  if (!fractional || fractional.length < length) {
+    return formattedUnits;
+  }
+
+  if (integer.length > 6) {
+    return `${integer}.${fractional.slice(0, 4)}`;
+  }
+
+  return `${integer}.${fractional.slice(0, length)}`;
 };
 
 const formatEstimateFee = (
