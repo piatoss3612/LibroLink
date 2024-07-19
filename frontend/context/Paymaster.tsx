@@ -1,4 +1,4 @@
-import PaymasterModal from "@/components/paymaster/PaymasterModal";
+import PaymasterModal from "@/components/paymaster";
 import useZkSyncClient from "@/hooks/useZkSyncClient";
 import {
   LIBRO_PAYMASTER_ABI,
