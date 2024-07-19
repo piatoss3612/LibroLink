@@ -7,30 +7,21 @@ import {
 } from "@chakra-ui/react";
 import { CheckCircleIcon, SmallCloseIcon } from "@chakra-ui/icons";
 import { Line } from "../common";
+import usePaymaster from "@/hooks/usePaymaster";
 
-interface PaymentModalBodyProps {
-  errorMessage: string;
-  requestName: string;
-  fee: string;
-  gasPrice: string;
-  dailyTxCount: string;
-  dailyLimit: string;
-  cost: string;
-  canResetDailyTxCount: boolean;
-  paymasterAvailable: boolean;
-}
+const PaymentModalBody = () => {
+  const {
+    requestName,
+    fee,
+    gasPrice,
+    dailyTxCount,
+    dailyLimit,
+    cost,
+    canResetDailyTxCount,
+    paymasterAvailable,
+    errorMessage,
+  } = usePaymaster();
 
-const PaymentModalBody = ({
-  errorMessage,
-  requestName,
-  fee,
-  gasPrice,
-  dailyTxCount,
-  dailyLimit,
-  cost,
-  canResetDailyTxCount,
-  paymasterAvailable,
-}: PaymentModalBodyProps) => {
   return (
     <ModalBody bg={"gray.100"} mx={6} rounded={"md"}>
       <Stack m={4} spacing={4} justify="center" align="center">

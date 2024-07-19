@@ -9,19 +9,8 @@ interface PaymentModalProps {
   onClose: () => void;
   isOpen: boolean;
   isLoading: boolean;
-  requestName: string;
-  paymasterType: PaymasterType;
-  gasPrice: string;
-  fee: string;
-  cost: string;
-  dailyLimit: string;
-  dailyTxCount: string;
-  canResetDailyTxCount: boolean;
-  hasReachedDailyLimit: boolean;
-  isBanned: boolean;
-  isNftOwner: boolean;
-  txStatus: "success" | "reverted" | "";
   txHash: string;
+  txResult: boolean;
   confirmPayment: () => void;
 }
 
@@ -29,31 +18,10 @@ const PaymasterModal = ({
   onClose,
   isOpen,
   isLoading,
-  requestName,
-  paymasterType,
-  gasPrice,
-  fee,
-  cost,
-  dailyLimit,
-  canResetDailyTxCount,
-  hasReachedDailyLimit,
-  dailyTxCount,
-  isBanned,
-  isNftOwner,
-  txStatus,
   txHash,
+  txResult,
   confirmPayment,
 }: PaymentModalProps) => {
-  const paymasterAvailable = !isBanned && isNftOwner && !hasReachedDailyLimit;
-  const errorMessage = isBanned
-    ? "Banned account are not allowed"
-    : !isNftOwner
-    ? "Only LibroNFT holders are allowed"
-    : hasReachedDailyLimit
-    ? "Daily limit reached"
-    : "";
-  const txResult = txStatus === "success";
-
   const title = txHash
     ? "Payment Complete"
     : isLoading
@@ -65,26 +33,13 @@ const PaymasterModal = ({
   ) : isLoading ? (
     <LoadingModalBody />
   ) : (
-    <PaymentModalBody
-      errorMessage={errorMessage}
-      requestName={requestName}
-      fee={fee}
-      gasPrice={gasPrice}
-      dailyTxCount={dailyTxCount}
-      dailyLimit={dailyLimit}
-      cost={cost}
-      canResetDailyTxCount={canResetDailyTxCount}
-      paymasterAvailable={paymasterAvailable}
-    />
+    <PaymentModalBody />
   );
 
   const modalFooter = txHash ? (
     <ResultModalFooter onClose={onClose} />
   ) : isLoading ? null : (
-    <PaymentModalFooter
-      paymasterAvailable={paymasterAvailable}
-      confirmPayment={confirmPayment}
-    />
+    <PaymentModalFooter confirmPayment={confirmPayment} />
   );
 
   return (

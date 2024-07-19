@@ -9,7 +9,11 @@ import {
   LIBRO_PAYMASTER_ABI,
   LIBRO_PAYMASTER_ADDRESS,
 } from "@/libs/LibroPaymaster";
-import { formatBigNumber, formatEstimateFee } from "@/libs/utils";
+import {
+  formatBigNumber,
+  formatEstimateFee,
+  formatUnitsToFixed,
+} from "@/libs/utils";
 import { ERC20TokenMetadata, PaymasterRequest, PaymasterType } from "@/types";
 import { useDisclosure, useToast } from "@chakra-ui/react";
 import { useQueries, useQuery } from "@tanstack/react-query";
@@ -26,6 +30,25 @@ interface PaymasterContextValue {
     request: PaymasterRequest,
     callback?: () => void
   ) => void;
+  requestName: string;
+  paymasterType: PaymasterType;
+  selectedToken: ERC20TokenMetadata | null;
+  setSelectedToken: (token: ERC20TokenMetadata) => void;
+  supportedTokensList: ERC20TokenMetadata[];
+  isLoading: boolean;
+  txStatus: "success" | "reverted" | "";
+  txHash: string;
+  dailyLimit: string;
+  canResetDailyTxCount: boolean;
+  hasReachedDailyLimit: boolean;
+  dailyTxCount: string;
+  isNftOwner: boolean;
+  ethPriceInToken: string;
+  gasPrice: string;
+  fee: string;
+  cost: string;
+  paymasterAvailable: boolean;
+  errorMessage: string;
 }
 
 const PaymasterContext = createContext({} as PaymasterContextValue);
@@ -47,7 +70,7 @@ const PaymasterProvider = ({ children }: { children: React.ReactNode }) => {
   const [selectedToken, setSelectedToken] = useState<ERC20TokenMetadata | null>(
     null
   );
-  const SupportedTokensList: ERC20TokenMetadata[] = [
+  const supportedTokensList: ERC20TokenMetadata[] = [
     {
       address: "0xAe045DE5638162fa134807Cb558E15A3F5A7F853",
       decimals: 6,
@@ -351,8 +374,9 @@ const PaymasterProvider = ({ children }: { children: React.ReactNode }) => {
     queryKey: ["ethPriceInToken", selectedToken?.address],
     queryFn: async () => {
       const estimateFee = await getEstimateFee();
+      const fee = estimateFee.gasLimit * estimateFee.maxFeePerGas;
 
-      return await getEthPriceInToken(selectedToken!.address, BigInt(1));
+      return await getEthPriceInToken(selectedToken!.address, fee);
     },
     enabled: !!publicClient && !!selectedToken && !isGeneralPaymaster,
     refetchInterval: 3000,
@@ -372,32 +396,57 @@ const PaymasterProvider = ({ children }: { children: React.ReactNode }) => {
     checkDailyLimitQuery.data || [false, false, BigInt(0)];
   const isBanned = isBannedQuery.data || false;
   const isNftOwner = isNftOwnerQuery.data || false;
-
+  const ethPriceInTokenData = ethPriceInTokenQuery.data || [BigInt(0), 0];
+  const ethPriceInToken = formatUnitsToFixed(
+    ethPriceInTokenData[0],
+    ethPriceInTokenData[1]
+  );
   const { gasPrice, fee, cost } = formatEstimateFee(estimateFeeQuery.data);
+
+  const paymasterAvailable = isGeneralPaymaster
+    ? !isBanned && isNftOwner && !hasReachedDailyLimit
+    : true;
+  const errorMessage = isBanned
+    ? "Banned account are not allowed"
+    : !isNftOwner
+    ? "Only LibroNFT holders are allowed"
+    : hasReachedDailyLimit
+    ? "Daily limit reached"
+    : "";
+
+  const txResult = txStatus === "success";
 
   return (
     <PaymasterContext.Provider
       value={{
         openPaymasterModal,
+        requestName: request?.name || "Unknown Request",
+        paymasterType,
+        selectedToken,
+        setSelectedToken,
+        supportedTokensList,
+        isLoading,
+        txStatus,
+        txHash,
+        dailyLimit,
+        canResetDailyTxCount,
+        hasReachedDailyLimit,
+        dailyTxCount: dailyTxCount.toString(),
+        isNftOwner,
+        ethPriceInToken,
+        gasPrice,
+        fee,
+        cost,
+        paymasterAvailable,
+        errorMessage,
       }}
     >
       <PaymasterModal
         isOpen={isOpen}
         onClose={closePaymasterModal}
         isLoading={isLoading}
-        requestName={request?.name || "Unknown Request"}
-        paymasterType={paymasterType}
-        gasPrice={gasPrice}
-        fee={fee}
-        cost={cost}
-        dailyLimit={dailyLimit}
-        canResetDailyTxCount={canResetDailyTxCount}
-        hasReachedDailyLimit={hasReachedDailyLimit}
-        dailyTxCount={dailyTxCount.toString()}
-        isBanned={isBanned}
-        isNftOwner={isNftOwner}
-        txStatus={txStatus}
         txHash={txHash}
+        txResult={txResult}
         confirmPayment={confirmPayment}
       />
       {children}
