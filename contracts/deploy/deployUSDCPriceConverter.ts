@@ -5,7 +5,7 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 export default async function (hre: HardhatRuntimeEnvironment) {
   // Deploy USDCPriceConverter
   const usdcAddress = "0xAe045DE5638162fa134807Cb558E15A3F5A7F853";
-  const priceFeed = "0x1844478CA634f3a762a2E71E3386837Bd50C947F"; // ETH/USD
+  const priceFeed = "0xfEefF7c3fB57d18C5C6Cdd71e45D2D0b4F9377bF"; // ETH/USD
 
   const priceConverter = await deployContract("USDCPriceConverter", [
     usdcAddress,
