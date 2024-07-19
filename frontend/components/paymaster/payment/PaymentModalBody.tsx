@@ -1,89 +1,52 @@
 import {
-  Divider,
-  Highlight,
   ModalBody,
-  Stack,
-  Tooltip,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
 } from "@chakra-ui/react";
-import { CheckCircleIcon, SmallCloseIcon } from "@chakra-ui/icons";
-import { Line } from "../common";
 import usePaymaster from "@/hooks/usePaymaster";
+import GeneralPaymasterTab from "./GeneralPaymasterTab";
+import ApprovalBasedPaymasterTab from "./ApprovalBasedPaymasterTab";
+import { PaymasterType } from "@/types";
 
 const PaymentModalBody = () => {
-  const {
-    requestName,
-    fee,
-    gasPrice,
-    dailyTxCount,
-    dailyLimit,
-    cost,
-    canResetDailyTxCount,
-    paymasterAvailable,
-    errorMessage,
-  } = usePaymaster();
+  const { paymasterType, setPaymasterType } = usePaymaster();
+
+  console.log("paymasterType", paymasterType);
+
+  const tabs = [
+    {
+      name: "General",
+      paymasterType: "general" as PaymasterType,
+      component: <GeneralPaymasterTab />,
+    },
+    {
+      name: "Approval",
+      paymasterType: "approval" as PaymasterType,
+      component: <ApprovalBasedPaymasterTab />,
+    },
+  ];
+
+  const handleTabChange = (index: number) => {
+    setPaymasterType(tabs[index].paymasterType);
+  };
 
   return (
     <ModalBody bg={"gray.100"} mx={6} rounded={"md"}>
-      <Stack m={4} spacing={4} justify="center" align="center">
-        {errorMessage && (
-          <Highlight
-            query={errorMessage}
-            styles={{
-              px: "2",
-              py: "1",
-              rounded: "full",
-              bg: "red.500",
-              fontWeight: "bold",
-              fontSize: "lg",
-              color: "white",
-            }}
-          >
-            {errorMessage}
-          </Highlight>
-        )}
-        <Line left="Transaction:" right={requestName} />
-        <Line left="Transaction Fee:" right={`${fee} ETH`} />
-        <Line left="Gas Price:" right={`${gasPrice} ETH`} />
-        <Line left="Daily Limit:" right={`${dailyTxCount}/${dailyLimit}`} />
-        <Line
-          left="Reset Daily Limit:"
-          right={
-            <Tooltip label="Reset on UTC 6:00 AM" aria-label="A tooltip">
-              {canResetDailyTxCount ? (
-                <CheckCircleIcon color="green" />
-              ) : (
-                <SmallCloseIcon color="red" />
-              )}
-            </Tooltip>
-          }
-        />
-        <Divider />
-        <Line left="Estimated Cost:" right={`${cost} ETH`} />
-        {paymasterAvailable && (
-          <Line
-            left="Paymaster Discount:"
-            right={
-              <Highlight
-                query={"-100%"}
-                styles={{
-                  px: "2",
-                  py: "1",
-                  rounded: "full",
-                  bg: "green.100",
-                  fontWeight: "bold",
-                }}
-              >
-                -100%
-              </Highlight>
-            }
-          />
-        )}
-        <Divider />
-        <Line
-          left="Total Cost:"
-          right={`${paymasterAvailable ? "FREE" : `${cost} ETH`}`}
-        />
-      </Stack>
+      <Tabs isFitted onChange={handleTabChange}>
+        <TabList>
+          {tabs.map((tab, index) => (
+            <Tab key={index}>{tab.name}</Tab>
+          ))}
+        </TabList>
+        <TabPanels>
+          {tabs.map((tab, index) => (
+            <TabPanel key={index}>{tab.component}</TabPanel>
+          ))}
+        </TabPanels>
+      </Tabs>
     </ModalBody>
   );
 };

@@ -32,6 +32,7 @@ interface PaymasterContextValue {
   ) => void;
   requestName: string;
   paymasterType: PaymasterType;
+  setPaymasterType: (type: PaymasterType) => void;
   selectedToken: ERC20TokenMetadata | null;
   setSelectedToken: (token: ERC20TokenMetadata) => void;
   supportedTokensList: ERC20TokenMetadata[];
@@ -422,6 +423,7 @@ const PaymasterProvider = ({ children }: { children: React.ReactNode }) => {
         openPaymasterModal,
         requestName: request?.name || "Unknown Request",
         paymasterType,
+        setPaymasterType,
         selectedToken,
         setSelectedToken,
         supportedTokensList,
