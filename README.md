@@ -26,6 +26,7 @@ This tutorial is for developers who:
 - [Create stubs for the Approval Flow Paymaster](#3-create-stubs-for-the-approval-flow-paymaster)
 - [Dynamic fee calculation](#dynamic-fee-calculation)
 - [Price Converter Implementation](#price-converter-implementation)
+- [Frontend Integration](#frontend-integration)
 
 ## Requirements
 
@@ -595,3 +596,233 @@ Done in 19.14s.
 ## Price Converter Implementation
 
 ### Choose a token to support
+
+Even though we can support multiple tokens, we will choose a single token to support for simplicity in this tutorial.
+
+- We will support the `USDC` token for the fee calculation.
+- The `USDC` token is on zkSync Sepolia testnet, address: `0xAe045DE5638162fa134807Cb558E15A3F5A7F853`.
+- However, when I tried to pay the fee with the `USDC` token, it failed with the following error, `Touched unallowed storage slots: address ae045de5638162fa134807cb558e15a3f5a7f853, key: 10d6a54a4754c8869d6886b5f5d7fbfa5b4522237ea5c60d11bc4e7a1ff9390b`.
+
+```bash
+An unknown RPC error occurred. Request Arguments: chain: zkSync Sepolia Testnet (id: 300) from: 0xF5212815F326B45F21435FcA24a09D7f22a48876 to: 0x42d625D2A7142F55952d8B63a5FCa907656c2887 data: 0xd09de08a Details: processing response error (body="{\"jsonrpc\":\"2.0\",\"error\":{\"code\":3,\"message\":\"failed to validate the transaction. reason: Violated validation rules: Touched unallowed storage slots: address ae045de5638162fa134807cb558e15a3f5a7f853, key: 10d6a54a4754c8869d6886b5f5d7fbfa5b4522237ea5c60d11bc4e7a1ff9390b\",\"data\":\"0x\"},\"id\":92}\n", error={"code":3,"data":"0x"}, requestBody="{\"method\":\"eth_sendRawTransaction\",\"params\":[\"0x71f9012710808401c9c3808310fdac9442d625d2a7142f55952d8b63a5fca907656c28878084d09de08a82012c808082012c94f5212815f326b45f21435fca24a09d7f22a4887682c350c0b841df4bbf4c287064b24af9146e65893044a672440c770a2b75c6878910baaadf6862230193cfa6d7ab3bb6dc2eb90df74219a95d31f6b82aa4255025af4dcb8c1c1cf89b94d77a1b078c7c17f6b44475a107926c0725317baab884949431dc000000000000000000000000ae045de5638162fa134807cb558e15a3f5a7f853000000000000000000000000000000000000000000000000000000000098968000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000\"],\"id\":92,\"jsonrpc\":\"2.0\"}", requestMethod="POST", url="https://sepolia.era.zksync.dev", code=SERVER_ERROR, version=web/5.7.1) Version: viem@2.13.1
+```
+
+- Found the discussion about the issue on [zkSync Community Forum](https://github.com/zkSync-Community-Hub/zksync-developers/discussions/236), but no obvious solution was found.
+- It might be a bug with upgradeable proxy contracts, but I'm not sure about it.
+- Thus, I will deploy `MockUSDC` using just a simple ERC20 token contract.
+
+### Create MockUSDC
+
+- Create a new file `MockUSDC.sol` in the `contracts/token` directory.
+- The contract is a simple ERC20 token contract and has `faucet` function to mint tokens to the user.
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
+contract MockUSDC is ERC20 {
+    constructor() ERC20("MOCK USDC", "USDC") {
+        _mint(msg.sender, 100000000000 * 10 ** decimals());
+    }
+
+    function faucet() external {
+        _mint(msg.sender, 10000000 * 10 ** decimals());
+    }
+
+    function faucet(address to) external {
+        _mint(to, 10000000 * 10 ** decimals());
+    }
+
+    function decimals() public view virtual override returns (uint8) {
+        return 6;
+    }
+}
+```
+
+### Chainlink Price Feed
+
+- We will use the Chainlink price feed as the price oracle for the `USDC` token.
+- `USDC` is pegged to the USD, so we are using the `ETH/USD` price feed for the `USDC` token. Though it is not accurate, it is just for demonstration purposes.
+- To use the Chainlink price feed, we need the contract address and `AggregatorV3Interface` interface.
+- The price feed address is `0xfEefF7c3fB57d18C5C6Cdd71e45D2D0b4F9377bF`, and the interface is as follows.
+- Create a new file `AggregatorV3Interface.sol` in the `contracts/token/interfaces` directory.
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+interface AggregatorV3Interface {
+    function decimals() external view returns (uint8);
+
+    function description() external view returns (string memory);
+
+    function version() external view returns (uint256);
+
+    function getRoundData(uint80 _roundId)
+        external
+        view
+        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound);
+
+    function latestRoundData()
+        external
+        view
+        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound);
+}
+```
+
+- [Price Feed List on zkSync Sepolia](https://docs.chain.link/data-feeds/price-feeds/addresses?network=zksync&page=1#zksync-sepolia-testnet)
+
+### Implement the Price Converter
+
+- Create a new file `USDCPriceConverter.sol` in the `contracts/token` directory.
+- The contract implements the `IPriceConverter` interface and provides the price of the `USDC` token.
+- The contract uses the `MockUSDC` token and `ETH/USD` price feed to calculate the price.
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+import {IPriceConverter} from "./interfaces/IPriceConverter.sol";
+import {AggregatorV3Interface} from "./interfaces/AggregatorV3Interface.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
+contract USDCPriceConverter is IPriceConverter {
+    error USDCPriceConverter__InvalidPrice();
+
+    uint8 private constant ETH_DECIMALS = 18;
+
+    ERC20 private _usdc;
+    AggregatorV3Interface private _priceFeed; // ETH/USD price feed
+
+    constructor(address usdc, address priceFeed_) {
+        _usdc = ERC20(usdc);
+        _priceFeed = AggregatorV3Interface(priceFeed_);
+    }
+
+    function asset() external view returns (address usdc, uint8 decimals) {
+        return (address(_usdc), _usdc.decimals());
+    }
+
+    function priceFeed() external view returns (address) {
+        return address(_priceFeed);
+    }
+
+    function latestAssetPrice() public view returns (uint256, uint8) {
+        (, int256 price,,,) = _priceFeed.latestRoundData();
+        if (price <= 0) {
+            revert USDCPriceConverter__InvalidPrice();
+        }
+
+        return (uint256(price), _priceFeed.decimals());
+    }
+
+    function assetToEth(uint256 assetAmount) external view override returns (uint256 ethAmount, uint8 ethDecimals) {
+        (uint256 price, uint8 priceDecimals) = latestAssetPrice(); // Get the latest price, and the decimals
+
+        // Calculate the eth amount without decimals
+        ethAmount = (assetAmount * (10 ** priceDecimals)) / price;
+
+        // Adjust decimals to match ETH's 18 decimals
+        ethAmount = (ethAmount * (10 ** (ETH_DECIMALS - _usdc.decimals())));
+        ethDecimals = ETH_DECIMALS;
+    }
+
+    function ethToAsset(uint256 ethAmount) external view override returns (uint256 assetAmount, uint8 assetDecimals) {
+        (uint256 price, uint8 priceDecimals) = latestAssetPrice(); // Get the latest price, and the decimals
+
+        // Calculate the asset amount without decimals
+        assetAmount = (ethAmount * price) / (10 ** priceDecimals);
+
+        // Adjust decimals to match the asset's decimals
+        assetAmount = (assetAmount * (10 ** _usdc.decimals())) / (10 ** ETH_DECIMALS);
+        assetDecimals = _usdc.decimals();
+    }
+}
+```
+
+### Deploy the contracts
+
+- Deploy the `MockUSDC` and `USDCPriceConverter` contracts using the deployment script.
+
+```typescript
+import { Contract } from "ethers";
+import { deployContract, getWallet } from "./utils";
+import { HardhatRuntimeEnvironment } from "hardhat/types";
+
+export default async function (hre: HardhatRuntimeEnvironment) {
+  // Deploy USDCPriceConverter
+  const mockUSDC = await deployContract("MockUSDC", []);
+  const mockUSDCAddress = await mockUSDC.getAddress();
+
+  const priceFeed = "0xfEefF7c3fB57d18C5C6Cdd71e45D2D0b4F9377bF"; // ETH/USD
+
+  const priceConverter = await deployContract("USDCPriceConverter", [
+    mockUSDCAddress,
+    priceFeed,
+  ]);
+
+  const wallet = getWallet();
+  const erc20PaymasterAddress = "0xE0d114C895933Ec646f851ce0C2faD1BB3726363";
+  const erc20PaymasterArtifact = await hre.artifacts.readArtifact(
+    "LibroERC20Paymaster"
+  );
+
+  const erc20Paymaster = new Contract(
+    erc20PaymasterAddress,
+    erc20PaymasterArtifact.abi,
+    wallet
+  );
+
+  // Set USDCPriceConverter in LibroERC20Paymaster
+  const priceConverterAddress = await priceConverter.getAddress();
+
+  const tx = await erc20Paymaster.setTokenPriceConverter(
+    mockUSDCAddress,
+    priceConverterAddress
+  );
+
+  await tx.wait();
+
+  console.log("Successfully set USDCPriceConverter in LibroERC20Paymaster");
+}
+```
+
+- Run the deployment script using the following command.
+
+```bash
+$ yarn hardhat deploy-zksync --script deployUSDCPriceConverter.ts
+yarn run v1.22.22
+
+Starting deployment process of "MockUSDC"...
+Estimated deployment cost: 0.0009902508 ETH
+
+"MockUSDC" was successfully deployed:
+ - Contract address: 0xF2551686FC417A5Ba80330e48023D12D8F82c61a
+ - Contract source: contracts/token/MockUSDC.sol:MockUSDC
+ - Encoded constructor arguments: 0x
+
+Requesting contract verification...
+Your verification ID is: 19841
+Contract successfully verified on zkSync block explorer!
+
+Starting deployment process of "USDCPriceConverter"...
+Estimated deployment cost: 0.00003843915 ETH
+
+"USDCPriceConverter" was successfully deployed:
+ - Contract address: 0x1C1b70e2580CF3eCd6FbCB211308400938BaC31a
+ - Contract source: contracts/token/USDCPriceConverter.sol:USDCPriceConverter
+ - Encoded constructor arguments: 0x000000000000000000000000f2551686fc417a5ba80330e48023d12d8f82c61a000000000000000000000000feeff7c3fb57d18c5c6cdd71e45d2d0b4f9377bf
+
+Requesting contract verification...
+Your verification ID is: 19842
+Contract successfully verified on zkSync block explorer!
+Successfully set USDCPriceConverter in LibroERC20Paymaster
+Done in 24.59s.
+```
+
+- The `MockUSDC` and `USDCPriceConverter` contracts are successfully deployed and verified on the zkSync block explorer.
+- The `USDCPriceConverter` contract is set in the `LibroERC20Paymaster` contract.
+
+## Frontend Integration
