@@ -17,7 +17,6 @@ const BottomNavBar = ({ setNavBarHeight }: BottomNavBarProps) => {
   // Navigation items
   const navItems = [
     { name: "home", label: "Home", path: "/", icon: IoHome },
-    { name: "buddy", label: "Buddy", path: "/buddies", icon: IoPaw },
     { name: "library", label: "Library", path: "/library", icon: IoLibrary },
     {
       name: "challenge",
