@@ -28,6 +28,9 @@ This tutorial is for developers who:
 - [Price Converter Implementation](#price-converter-implementation)
 - [Frontend Integration](#frontend-integration)
 - [Demo](#demo)
+- [Conclusion](#conclusion)
+- [Issues](#issues)
+- [References](#references)
 
 ## Requirements
 
@@ -1407,4 +1410,35 @@ export default Dashboard;
 
 ## Demo
 
-(WIP)
+[![Approval-Flow-Paymaster-Demo](https://img.youtube.com/vi/o0RdRoT26UA/0.jpg)](https://www.youtube.com/watch?v=o0RdRoT26UA)
+
+1. Claim the `MockUSDC` token from the faucet.
+2. Select the `Approval` tab in the payment modal.
+3. Select the `USDC` token from the supported tokens list.
+4. See the token balance of the user and the estimated cost in the selected token.
+5. Confirm the payment and see the transaction status.
+
+### How the entire system works
+
+Without calling `approve` function, the user can pay the fee with the `MockUSDC` token using the approval flow paymaster. How this can be done?
+
+1. At the paymaster validation step, the `prepareForPaymaster` function of the account is called before executing `validateAndPayForPaymasterTransaction` function of the paymaster.
+2. `EOA` of zkSync is also [an smart contract account](https://github.com/matter-labs/era-system-contracts/blob/main/contracts/DefaultAccount.sol) under the hood. Thus, the `prepareForPaymaster` function of the `EOA` is called.
+3. The paymasterInput is processed in the `prepareForPaymaster` function and the `approve` function is called for the selected token.
+4. The user approves the token for the paymaster and the paymaster can spend the token on behalf of the user.
+
+## Conclusion
+
+- In this tutorial, we have implemented the approval flow paymaster with multiple tokens support, dynamic fee calculation, and refund mechanism.
+- We also integrated the Chainlink price feed to get the price of the `ETH/USD` and calculate the fee with implemented price converter.
+- The user can select the token from the supported tokens list and pay the fee with the selected token using the approval flow paymaster.
+
+## Issues
+
+- Using the proxy contract in the approval flow paymaster causes the error: `Touched unallowed storage slots: address ae045de5638162fa134807cb558e15a3f5a7f853, key: 10d6a54a4754c8869d6886b5f5d7fbfa5b4522237ea5c60d11bc4e7a1ff9390b`.
+- The `sendTransaction` function estimates more gas than the actual gas required, so the token allowance is not enough for the paymaster to proceed with the transaction.
+
+## References
+
+- [ZKsync 101: Paymaster](https://docs.zksync.io/build/zksync-101/paymaster)
+- [Chainlink Price Feeds](https://docs.chain.link/data-feeds/getting-started)
