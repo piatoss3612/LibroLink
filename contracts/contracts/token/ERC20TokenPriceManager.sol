@@ -16,7 +16,7 @@ abstract contract ERC20TokenPriceManager is Ownable {
     constructor() Ownable(msg.sender) {}
 
     function setTokenPriceConverter(address token, IPriceConverter priceConverter) external onlyOwner {
-        if (address(priceConverter) == address(0)) {
+        if (token == address(0)) {
             revert ERC20TokenManager__InvalidToken();
         }
 
