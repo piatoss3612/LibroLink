@@ -16,6 +16,7 @@
     "@fontsource-variable/baloo-2": "^5.0.20",
     "@privy-io/react-auth": "^1.66.3",
     "@tanstack/react-query": "^5.40.0",
+    "axios": "^1.7.2",
     "framer-motion": "^11.2.9",
     "next": "14.2.3",
     "react": "^18",

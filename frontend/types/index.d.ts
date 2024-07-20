@@ -17,4 +17,28 @@ interface PaymasterRequest {
   value?: bigint; // The value of the transaction
 }
 
-export { PaymasterType, PaymasterRequest, ERC20TokenMetadata };
+interface PinToPinataResponse {
+  IpfsHash: string;
+  PinSize: number;
+  Timestamp: string;
+}
+
+interface PinJsonToPinataRequest {
+  pinataMetadata: {
+    name: string;
+    keyvalues: {
+      [key: string]: string;
+    };
+  };
+  pinataContent: {
+    [key: string]: any;
+  };
+}
+
+export {
+  PaymasterType,
+  PaymasterRequest,
+  ERC20TokenMetadata,
+  PinToPinataResponse,
+  PinJsonToPinataRequest,
+};
