@@ -1,14 +1,14 @@
 import { Center } from "@chakra-ui/react";
 
 const LayoutContent = ({
-  pb,
+  mb,
   children,
 }: {
-  pb: number;
+  mb: number;
   children: React.ReactNode;
 }) => {
   return (
-    <Center flexGrow={1} pb={`${pb}px`}>
+    <Center flexGrow={1} mb={`${mb}px`}>
       {children}
     </Center>
   );

@@ -2,12 +2,22 @@ import { Account, Address } from "viem";
 
 type PaymasterType = "general" | "approval";
 
-type ERC20TokenMetadata = {
+interface ERC20TokenMetadata {
   address: `0x${string}`;
   decimals: number;
   symbol: string;
   name: string;
-};
+}
+
+interface TokenMetadata {
+  name: string;
+  description: string;
+  image: string;
+  attributes: {
+    trait_type: string;
+    value: string;
+  }[];
+}
 
 interface PaymasterRequest {
   name: string; // The name of the request
@@ -39,6 +49,7 @@ export {
   PaymasterType,
   PaymasterRequest,
   ERC20TokenMetadata,
+  TokenMetadata,
   PinToPinataResponse,
   PinJsonToPinataRequest,
 };

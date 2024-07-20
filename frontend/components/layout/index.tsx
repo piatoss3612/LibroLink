@@ -20,7 +20,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <LayoutBox>
-      <LayoutContent pb={authenticated ? navBarHeight : 0}>
+      <LayoutContent mb={authenticated ? navBarHeight : 0}>
         {ready ? children : <LoadingSpinner />}
       </LayoutContent>
       {ready && authenticated && (
