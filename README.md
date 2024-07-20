@@ -130,10 +130,11 @@ By the end of this guide, you will have a fully functional dApp where users can:
 
 ### Guide Sections
 
-| Section                                                                                                         | Category         | Difficulty |
-| --------------------------------------------------------------------------------------------------------------- | ---------------- | ---------- |
-| [1. Social Login with Privy and zkSync Network](https://github.com/piatoss3612/LibroLink/tree/01.social-login)  | dApp Core        | ★★☆☆☆      |
-| [2. General Paymaster with custom features](https://github.com/piatoss3612/LibroLink/tree/02.general-paymaster) | zkSync Native AA | ★★★☆☆      |
+| Section                                                                                                                              | Category         | Difficulty |
+| ------------------------------------------------------------------------------------------------------------------------------------ | ---------------- | ---------- |
+| [1. Social Login with Privy and zkSync Network](https://github.com/piatoss3612/LibroLink/tree/01.social-login)                       | dApp Core        | ★★☆☆☆      |
+| [2. General Paymaster with custom features](https://github.com/piatoss3612/LibroLink/tree/02.general-paymaster)                      | zkSync Native AA | ★★★☆☆      |
+| [3. Approval Flow Paymaster with dynamic fee calculation](https://github.com/piatoss3612/LibroLink/tree/03.approval-based-paymaster) | zkSync Native AA | ★★★★☆      |
 
 ## Prerequisites
 
@@ -166,7 +167,6 @@ $ yarn start
 ### zkSync Native Account Abstraction Features
 
 - [x] Sponsor gas fees with a general paymaster
-- [ ] Create a contract account
 
 ### dApp core features
 
@@ -177,7 +177,7 @@ $ yarn start
 
 ### Advanced Features
 
-- [ ] Gas fees payment in ERC20 tokens with an approval-based paymaster and price oracle
+- [x] Gas fees payment in ERC20 tokens with an approval-based paymaster and price oracle
 - (WIP)
 
 ## License
