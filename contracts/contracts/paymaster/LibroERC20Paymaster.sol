@@ -12,7 +12,6 @@ import {
     Transaction
 } from "@matterlabs/zksync-contracts/l2/system-contracts/libraries/TransactionHelper.sol";
 import {BOOTLOADER_FORMAL_ADDRESS} from "@matterlabs/zksync-contracts/l2/system-contracts/Constants.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 import {NftGated, IERC721} from "./NftGated.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -27,7 +26,7 @@ contract LibroERC20Paymaster is IPaymaster, NftGated, ERC20TokenPriceManager {
     error LibroERC20Paymaster__FailedToTransferTxFeeToBootloader();
     error LibroERC20Paymaster__UnsupportedPaymasterFlowInPaymasterParams();
     error LibroERC20Paymaster__FailedToWithdrawFundsFromPaymaster();
-    error LibroERC20Paymaster__ExeededMinimumAllowance(uint256 required, uint256 allowed);
+    error LibroERC20Paymaster__ExceededMinimumAllowance(uint256 required, uint256 allowed);
     error LibroERC20Paymaster__FailedToTransferToken(address token);
 
     event Refund(address indexed user, address indexed token, uint256 amount);
@@ -96,23 +95,25 @@ contract LibroERC20Paymaster is IPaymaster, NftGated, ERC20TokenPriceManager {
 
         // Check if required token amount exceeds the minimal allowance.
         if (requiredToken > minAllowance) {
-            revert LibroERC20Paymaster__ExeededMinimumAllowance(requiredToken, minAllowance);
+            revert LibroERC20Paymaster__ExceededMinimumAllowance(requiredToken, minAllowance);
         }
 
         // Check if the user owns the gated NFT.
+        uint256 sponsoredAmount = 0;
+
         if (isNftOwner(userAddress)) {
             // Give 5% discount to the user.
-            requiredToken = (requiredToken * 95) / 100;
+            sponsoredAmount = (requiredToken * 5) / 100;
         }
 
         // Transfer the required amount of tokens to the paymaster.
-        bool transferred = IERC20(token).transferFrom(userAddress, address(this), requiredToken);
+        bool transferred = IERC20(token).transferFrom(userAddress, address(this), requiredToken - sponsoredAmount);
         if (!transferred) {
             revert LibroERC20Paymaster__FailedToTransferToken(token);
         }
 
         // Encode the token address, the required amount and the sponsored amount in the context.
-        context = _encodeContext(token, requiredToken, 0);
+        context = _encodeContext(token, requiredToken, sponsoredAmount);
 
         // The bootloader never returns any data, so it can safely be ignored here.
         (bool success,) = payable(BOOTLOADER_FORMAL_ADDRESS).call{value: requiredETH}("");
