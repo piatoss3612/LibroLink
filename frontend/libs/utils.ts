@@ -23,17 +23,15 @@ const formatUnitsToFixed = (
   }
 
   const formattedUnits = formatUnits(value, decimals);
-  const [integer, fractional] = formattedUnits.split(".");
+  const [integer, fractional = ""] = formattedUnits.split(".");
+
+  const truncatedFractional = fractional.slice(0, length).padEnd(length, "0");
 
   if (integer.length > 6) {
-    return `${integer}.${fractional.slice(0, 4)}`;
+    return `${integer}.${truncatedFractional.slice(0, 2)}`;
   }
 
-  if (!fractional || fractional.length < length) {
-    return formattedUnits;
-  }
-
-  return `${integer}.${fractional.slice(0, length)}`;
+  return `${integer}.${truncatedFractional}`;
 };
 
 const formatEstimateFee = (
