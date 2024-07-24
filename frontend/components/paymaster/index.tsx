@@ -48,7 +48,7 @@ const PaymasterModal = ({
       onClose={onClose}
       isOpen={isOpen}
       motionPreset="slideInBottom"
-      size={{ base: "lg", md: "xl" }}
+      size={"lg"}
       trapFocus={false}
     >
       <ModalOverlay />

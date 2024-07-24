@@ -31,7 +31,7 @@ const PaymentModalBody = () => {
   };
 
   return (
-    <ModalBody bg={"gray.100"} mx={6} rounded={"md"}>
+    <ModalBody>
       <Tabs isFitted onChange={handleTabChange} variant="soft-rounded">
         <TabList>
           {tabs.map((tab, index) => (
