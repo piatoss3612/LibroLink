@@ -24,12 +24,13 @@ const formatUnitsToFixed = (
 
   const formattedUnits = formatUnits(value, decimals);
   const [integer, fractional] = formattedUnits.split(".");
-  if (!fractional || fractional.length < length) {
-    return formattedUnits;
-  }
 
   if (integer.length > 6) {
     return `${integer}.${fractional.slice(0, 4)}`;
+  }
+
+  if (!fractional || fractional.length < length) {
+    return formattedUnits;
   }
 
   return `${integer}.${fractional.slice(0, length)}`;

@@ -8,10 +8,10 @@ const Line = ({
   right: string | JSX.Element;
 }): JSX.Element => (
   <HStack spacing={4} justify="space-between" w={"100%"}>
-    <Text fontSize="lg" fontWeight="bold">
+    <Text fontSize={{ base: "sm", md: "lg" }} fontWeight="bold">
       {left}
     </Text>
-    <Text fontSize="lg">{right}</Text>
+    <Text fontSize={{ base: "sm", md: "lg" }}>{right}</Text>
   </HStack>
 );
 
