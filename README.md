@@ -35,7 +35,7 @@ otp: 459378</pre>
 
 This project contains two main parts:
 
-1. A Book Club dApp
+1. A Book reading and tracking app called LibroLink
 2. Guides for building dApps with zkSync Native Account Abstraction
 
 ---
@@ -51,7 +51,7 @@ This project introduces a simple and intuitive platform for users to record thei
 1. **Lack of User Motivation**
 
    - **Problem**: Traditional book clubs often fail to motivate users to engage in reading activities or write reviews. Recently, users have increasingly preferred reading activities based on experiences through pop-up bookstores or SNS interactions, necessitating methods to encourage active interaction.
-   - **Solution**: Implementing a mission system and reading challenge system allows users to engage in reading activities and feel a sense of accomplishment. Completing missions or participating in challenges rewards users with points or tokens, thereby increasing their motivation.
+   - **Solution**: Implementing a reading challenge system that allows users to engage in reading activities and feel a sense of accomplishment. Users can participate in challenges, earn rewards, and customize their avatars, fostering a sense of community and competition.
 
 2. **Lack of Trust and Transparency**
 
@@ -96,7 +96,7 @@ This project introduces a simple and intuitive platform for users to record thei
 
 - **All Reading Enthusiasts**: Anyone who enjoys reading and wants a platform that makes reading activities more enjoyable, allowing them to communicate and compete with others. It is easy to use even without prior knowledge of blockchain technology.
 - **Users Interested in Blockchain Technology**: Users looking for a new reading experience leveraging blockchain technology. Blockchain enhances the trust and transparency of reading activities and guarantees users' data ownership.
-- **Users Who Prefer Gamified Experiences**: Users who enjoy gamified experiences and want to participate in reading challenges and missions. The platform provides a fun and engaging reading experience.
+- **Users Who Prefer Gamified Experiences**: Users who enjoy gamified experiences and want to participate in reading challenges. The platform provides a fun and engaging reading experience.
 
 ### Future Roadmap
 
@@ -173,11 +173,11 @@ $ yarn start
 - [x] Implement social login with Privy and zkSync Network
 - [ ] Create and record reading logs
 - [ ] Create reading challenges and award system
-- [ ] Implement a mission system
 
 ### Advanced Features
 
 - [x] Gas fees payment in ERC20 tokens with an approval-based paymaster and price oracle
+- [ ] Implement the Buddy system
 - (WIP)
 
 ## License
